@@ -4,14 +4,16 @@ FROM openclaw:latest
 # Switch to root to install binaries
 USER root
 
-# Download and install gog (gogcli) and wacli from GitHub releases
-ARG GOG_VERSION=v0.9.0
-ARG WACLI_VERSION=v0.2.0
+# Download and install gog (gogcli) from GitHub releases
+# Note: wacli has no Linux builds, only macOS
+ARG GOG_VERSION=0.9.0
+ARG TARGETARCH
 
 RUN apt-get update && apt-get install -y curl \
-    && curl -fsSL "https://github.com/steipete/gogcli/releases/download/${GOG_VERSION}/gogcli-linux-amd64" -o /usr/local/bin/gog \
-    && curl -fsSL "https://github.com/steipete/wacli/releases/download/${WACLI_VERSION}/wacli-linux-amd64" -o /usr/local/bin/wacli \
-    && chmod +x /usr/local/bin/gog /usr/local/bin/wacli \
+    && ARCH=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64") \
+    && curl -fsSL "https://github.com/steipete/gogcli/releases/download/v${GOG_VERSION}/gogcli_${GOG_VERSION}_linux_${ARCH}.tar.gz" \
+       | tar -xzf - -C /usr/local/bin gog \
+    && chmod +x /usr/local/bin/gog \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Switch back to non-root user

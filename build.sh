@@ -5,10 +5,10 @@ set -e
 echo "Building openclaw:latest base image..."
 docker build -t openclaw:latest ./openclaw
 
-# Build the custom image with gog and wacli
+# Build the custom image with gog
 echo "Building openclaw-cloud:latest with additional binaries..."
 docker build -t openclaw-cloud:latest .
 
 echo "Build complete! Images available:"
 echo "  - openclaw:latest (base)"
-echo "  - openclaw-cloud:latest (with gog + wacli)"
+echo "  - openclaw-cloud:latest (with gog)"

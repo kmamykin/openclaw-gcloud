@@ -1,17 +1,17 @@
 # Deploy OpenClaw to Google Cloud Run
 
-Deploy the OpenClaw application (from the `openclaw` subfolder) to Google Cloud Run using a custom Docker image that includes additional binaries (`gog` and `wacli`).
+Deploy the OpenClaw application (from the `openclaw` subfolder) to Google Cloud Run using a custom Docker image that includes the `gog` CLI.
 
 ## Directory Structure
 
 ```
 openclaw-cloud-run/
-├── Dockerfile              # Custom image (FROM openclaw:latest + gog + wacli)
+├── Dockerfile              # Custom image (FROM openclaw:latest + gog)
 ├── build.sh                # Build both images locally
 ├── deploy-gcloud.sh        # Deploy to Google Cloud Run
 ├── test-local.sh           # Test locally in Docker
 ├── data/                   # Local persistent data (gitignored)
-└── openclaw/               # Existing openclaw repository (unchanged)
+└── openclaw/               # Existing openclaw repository (separately cloned, gitignored)
 ```
 
 ## Prerequisites
@@ -51,7 +51,7 @@ Edit `.env` to set the necessary env vars. See the file for descriptions.
 
 This builds:
 - `openclaw:latest` - Base image from the `openclaw` subfolder
-- `openclaw-cloud:latest` - Extended image with `gog` and `wacli` binaries
+- `openclaw-cloud:latest` - Extended image with `gog` CLI
 
 ### 2. Test Locally
 
@@ -59,7 +59,7 @@ This builds:
 ./test-local.sh
 ```
 
-Access the gateway at http://localhost:3000/health
+Access the gateway at http://localhost:18789/health
 
 ### 3. Deploy to Cloud Run
 
@@ -71,7 +71,7 @@ source .env && ./deploy-gcloud.sh
 
 ### Cloud Storage FUSE Mount
 
-- **Persistent storage**: State is stored in a GCS bucket mounted at `/data` via Cloud Storage FUSE
+- **Persistent storage**: State is stored in a GCS bucket mounted at `/home/node/.openclaw` via Cloud Storage FUSE
 - **Performance**: GCS FUSE adds some latency compared to local disk, but persists state across container restarts
 - **Costs**: GCS storage costs apply (~$0.020/GB/month for standard storage)
 - **Requires Gen2 execution environment**: The deployment uses `--execution-environment=gen2` for volume mount support
@@ -90,9 +90,10 @@ The deployment automatically sets these environment variables:
 | Variable | Value | Description |
 |----------|-------|-------------|
 | `NODE_OPTIONS` | `--max-old-space-size=1536` | Node.js memory limit |
-| `OPENCLAW_STATE_DIR` | `/data` | Directory for persistent state |
-| `OPENCLAW_WORKSPACE_DIR` | `/data/workspace` | Directory for workspace files |
-| `OPENCLAW_GATEWAY_BIND` | `lan` | Network binding mode |
+| `HOME` | `/home/node` | Home directory for openclaw config |
+| `TERM` | `xterm-256color` | Terminal type |
+| `OPENCLAW_GATEWAY_TOKEN` | from `.env` | Gateway authentication token |
+| `OPENCLAW_GATEWAY_BIND` | from `.env` | Network binding mode |
 
 ### Adding API Keys and Secrets
 
@@ -133,14 +134,11 @@ Common secrets you might need:
 
 ### Verify Binaries Are Installed
 
-To verify `gog` and `wacli` are correctly installed:
+To verify `gog` is correctly installed:
 
 ```bash
-# Get the running instance
-gcloud run services describe openclaw --format="value(status.url)"
-
-# Or check during local testing
-docker run --rm openclaw-cloud:latest which gog wacli
+# Check during local testing
+docker run --rm openclaw-cloud:latest gog --version
 ```
 
 ## Troubleshooting
@@ -162,7 +160,7 @@ docker run --rm openclaw-cloud:latest which gog wacli
 
 - Check Cloud Run logs for errors
 - Verify the base `openclaw:latest` image works locally
-- Ensure port 3000 is correctly exposed
+- Ensure port 18789 is correctly exposed
 
 ### GCS Mount Issues
 
