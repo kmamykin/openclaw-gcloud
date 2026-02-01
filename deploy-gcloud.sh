@@ -63,8 +63,8 @@ gcloud run deploy ${SERVICE_NAME} \
     --execution-environment=gen2 \
     --port=${GATEWAY_PORT} \
     --memory=2Gi \
-    --cpu=2 \
-    --min-instances=0 \
+    --cpu=1 \
+    --min-instances=1 \
     --max-instances=1 \
     --timeout=3600 \
     --allow-unauthenticated \

@@ -39,9 +39,9 @@ gcloud config set project YOUR_PROJECT_ID
 
 ## Usage
 
-### 0. Set environment variables
+### 0. Configure Environment Variables
 
-Edit `.env`
+Edit `.env` to set the necessary env vars. See the file for descriptions.
 
 ### 1. Build Images Locally
 
@@ -67,16 +67,6 @@ Access the gateway at http://localhost:3000/health
 source .env && ./deploy-gcloud.sh
 ```
 
-#### Configuration Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `GCP_PROJECT_ID` | `your-project-id` | Google Cloud project ID (required) |
-| `GCP_REGION` | `us-central1` | GCP region for deployment |
-| `GCP_REPO_NAME` | `openclaw-repo` | Artifact Registry repository name |
-| `CLOUD_RUN_SERVICE` | `openclaw` | Cloud Run service name |
-| `GCS_BUCKET_NAME` | `${PROJECT_ID}-openclaw-data` | GCS bucket for persistent storage |
-
 ## Important Notes
 
 ### Cloud Storage FUSE Mount
@@ -91,7 +81,7 @@ source .env && ./deploy-gcloud.sh
 - **WebSocket support**: Cloud Run supports WebSockets, but connections may be interrupted during scale-down
 - **Cold starts**: With `min-instances=0`, there may be cold start latency. Set `min-instances=1` if needed (incurs additional cost)
 - **Timeout**: Set to 3600s (1 hour) for long-running WebSocket connections
-- **Resources**: Configured with 2 vCPU and 2GB memory
+- **Resources**: Configured with 1 vCPU and 2GB memory
 
 ### Environment Variables Set at Runtime
 
@@ -147,7 +137,7 @@ To verify `gog` and `wacli` are correctly installed:
 
 ```bash
 # Get the running instance
-gcloud run services describe openclaw --region=us-central1 --format="value(status.url)"
+gcloud run services describe openclaw --format="value(status.url)"
 
 # Or check during local testing
 docker run --rm openclaw-cloud:latest which gog wacli
@@ -182,15 +172,14 @@ docker run --rm openclaw-cloud:latest which gog wacli
 
 ## Cost Considerations
 
-With the default configuration (`min-instances=0`, `max-instances=1`):
+With the default configuration (`min-instances=1`, `max-instances=1`):
 
-- **Cloud Run**: Pay only when the container is running (~$0.00002400/vCPU-second, ~$0.00000250/GiB-second)
+- **Cloud Run**: Container is running all the time. Pay (~$0.00002400/vCPU-second, ~$0.00000250/GiB-second)
 - **Artifact Registry**: ~$0.10/GB/month for stored images
 - **Cloud Storage**: ~$0.020/GB/month for standard storage + operation costs
 - **Network egress**: Varies by destination
 
 To minimize costs:
-- Keep `min-instances=0` (cold starts are acceptable)
 - Use a smaller machine type if memory allows
 - Clean up old container images periodically
 

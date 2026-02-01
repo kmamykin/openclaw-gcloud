@@ -6,12 +6,10 @@ source "$SCRIPT_DIR/.env"
 
 echo "Running openclaw-cloud locally..."
 echo "Gateway: http://localhost:${OPENCLAW_GATEWAY_PORT}"
-echo "Bridge:  http://localhost:${OPENCLAW_BRIDGE_PORT}"
 echo ""
 
 docker run -it --rm \
     -p "${OPENCLAW_GATEWAY_PORT}:${OPENCLAW_GATEWAY_PORT}" \
-    -p "${OPENCLAW_BRIDGE_PORT}:${OPENCLAW_BRIDGE_PORT}" \
     -v "$(pwd)/data:/home/node/.openclaw" \
     -v "$(pwd)/data/workspace:/home/node/.openclaw/workspace" \
     -e HOME=/home/node \
