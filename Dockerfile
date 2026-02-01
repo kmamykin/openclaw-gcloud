@@ -1,5 +1,7 @@
-# Start from the openclaw base image (built locally)
-FROM openclaw:latest
+# Start from the openclaw base image
+# Use BASE_IMAGE arg for multi-arch builds (from registry), defaults to local image
+ARG BASE_IMAGE=openclaw:latest
+FROM ${BASE_IMAGE}
 
 # Switch to root to install binaries
 USER root
