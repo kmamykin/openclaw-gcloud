@@ -4,7 +4,6 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/.env"
 
-# Configuration (required environment variables)
 PROJECT_ID="${GCP_PROJECT_ID:?GCP_PROJECT_ID must be set}"
 REGION="${GCP_REGION:?GCP_REGION must be set}"
 REPO_NAME="${GCP_REPO_NAME:?GCP_REPO_NAME must be set}"
@@ -13,48 +12,20 @@ BUCKET_NAME="${GCS_BUCKET_NAME:?GCS_BUCKET_NAME must be set}"
 GATEWAY_TOKEN="${OPENCLAW_GATEWAY_TOKEN:?OPENCLAW_GATEWAY_TOKEN must be set}"
 GATEWAY_PORT="${OPENCLAW_GATEWAY_PORT:?OPENCLAW_GATEWAY_PORT must be set}"
 GATEWAY_BIND="${OPENCLAW_GATEWAY_BIND:?OPENCLAW_GATEWAY_BIND must be set}"
-IMAGE_NAME="openclaw-cloud"
 
-# Full image path
-IMAGE_PATH="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/${IMAGE_NAME}:latest"
+IMAGE_PATH="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/openclaw-cloud:latest"
 
-echo "=== Google Cloud Run Deployment ==="
-echo "Project: ${PROJECT_ID}"
-echo "Region: ${REGION}"
-echo "Repository: ${REPO_NAME}"
+echo "=== Deploying OpenClaw to Cloud Run ==="
 echo "Service: ${SERVICE_NAME}"
-echo "Bucket: ${BUCKET_NAME}"
 echo "Image: ${IMAGE_PATH}"
-echo ""
 
-# Step 1: Authenticate (if not already)
-echo "Ensuring gcloud authentication..."
-gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet
-
-# Step 2: Create Artifact Registry repository (if it doesn't exist)
-echo "Creating Artifact Registry repository (if needed)..."
-gcloud artifacts repositories create ${REPO_NAME} \
-    --repository-format=docker \
-    --location=${REGION} \
-    --project=${PROJECT_ID} \
-    --description="OpenClaw container images" \
-    2>/dev/null || echo "Repository already exists"
-
-# Step 3: Create GCS bucket for persistent storage (if it doesn't exist)
-echo "Creating GCS bucket for persistent storage (if needed)..."
-gcloud storage buckets create "gs://${BUCKET_NAME}" \
-    --project=${PROJECT_ID} \
-    --location=${REGION} \
-    --uniform-bucket-level-access \
-    2>/dev/null || echo "Bucket already exists"
-
-# Step 4: Build and push the image
-echo "Building and pushing image to Artifact Registry..."
+# Tag and push image
+echo "Pushing image to Artifact Registry..."
 docker tag openclaw-cloud:latest ${IMAGE_PATH}
 docker push ${IMAGE_PATH}
 
-# Step 5: Deploy to Cloud Run with GCS FUSE volume mount
-echo "Deploying to Cloud Run with GCS volume mount..."
+# Deploy to Cloud Run (creates or updates)
+echo "Deploying to Cloud Run..."
 gcloud run deploy ${SERVICE_NAME} \
     --image=${IMAGE_PATH} \
     --platform=managed \

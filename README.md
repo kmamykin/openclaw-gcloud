@@ -9,7 +9,8 @@ openclaw-cloud-run/
 ├── Dockerfile              # Custom image (FROM openclaw:latest + gog)
 ├── docker-compose.yml      # Local development compose file
 ├── build.sh                # Build both images locally
-├── deploy-gcloud.sh        # Deploy to Google Cloud Run
+├── gcloud-setup.sh         # One-time GCP infrastructure setup
+├── gcloud-deploy.sh        # Deploy to Google Cloud Run (idempotent)
 ├── test-local.sh           # Convenience wrapper for docker compose up
 ├── data/                   # Local persistent data (gitignored)
 └── openclaw/               # Existing openclaw repository (separately cloned, gitignored)
@@ -72,10 +73,20 @@ docker compose down             # Stop and remove containers
 docker compose run openclaw-cli # Run CLI commands
 ```
 
-### 3. Deploy to Cloud Run
+### 3. One-Time GCP Setup
+
+Run once to set up GCP infrastructure (APIs, Artifact Registry, GCS bucket):
 
 ```bash
-source .env && ./deploy-gcloud.sh
+./gcloud-setup.sh
+```
+
+### 4. Deploy to Cloud Run
+
+Deploy or update the Cloud Run service (idempotent):
+
+```bash
+./gcloud-deploy.sh
 ```
 
 ## Important Notes
@@ -108,11 +119,11 @@ The deployment automatically sets these environment variables:
 
 ### Adding API Keys and Secrets
 
-Additional environment variables (API keys, tokens) can be added to the `deploy-gcloud.sh` script or set via Cloud Run console.
+Additional environment variables (API keys, tokens) can be added to the `gcloud-deploy.sh` script or set via Cloud Run console.
 
 #### Option 1: Environment Variables (less secure)
 
-Add to the `gcloud run deploy` command in `deploy-gcloud.sh`:
+Add to the `gcloud run deploy` command in `gcloud-deploy.sh`:
 
 ```bash
 --set-env-vars="ANTHROPIC_API_KEY=your-key-here"
@@ -129,7 +140,7 @@ gcloud secrets add-iam-policy-binding ANTHROPIC_API_KEY \
     --member="serviceAccount:YOUR_PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
     --role="roles/secretmanager.secretAccessor"
 
-# Add to deployment (modify deploy-gcloud.sh)
+# Add to deployment (modify gcloud-deploy.sh)
 --set-secrets="ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest"
 ```
 
