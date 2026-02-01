@@ -2,19 +2,14 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/.env"
+cd "$SCRIPT_DIR"
 
 echo "Running openclaw-cloud locally..."
-echo "Gateway: http://localhost:${OPENCLAW_GATEWAY_PORT}"
+echo "Gateway: http://localhost:${OPENCLAW_GATEWAY_PORT:-18789}"
+echo ""
+echo "Commands:"
+echo "  docker compose logs -f"
+echo "  docker compose down"
 echo ""
 
-docker run -it --rm \
-    -p "${OPENCLAW_GATEWAY_PORT}:${OPENCLAW_GATEWAY_PORT}" \
-    -v "$(pwd)/data:/home/node/.openclaw" \
-    -v "$(pwd)/data/workspace:/home/node/.openclaw/workspace" \
-    -e HOME=/home/node \
-    -e TERM=xterm-256color \
-    -e OPENCLAW_GATEWAY_TOKEN="$OPENCLAW_GATEWAY_TOKEN" \
-    -e OPENCLAW_GATEWAY_BIND="$OPENCLAW_GATEWAY_BIND" \
-    openclaw-cloud:latest \
-    node dist/index.js gateway --allow-unconfigured --port "$OPENCLAW_GATEWAY_PORT" --bind "$OPENCLAW_GATEWAY_BIND"
+docker compose up

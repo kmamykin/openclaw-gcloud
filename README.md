@@ -7,9 +7,10 @@ Deploy the OpenClaw application (from the `openclaw` subfolder) to Google Cloud 
 ```
 openclaw-cloud-run/
 ├── Dockerfile              # Custom image (FROM openclaw:latest + gog)
+├── docker-compose.yml      # Local development compose file
 ├── build.sh                # Build both images locally
 ├── deploy-gcloud.sh        # Deploy to Google Cloud Run
-├── test-local.sh           # Test locally in Docker
+├── test-local.sh           # Convenience wrapper for docker compose up
 ├── data/                   # Local persistent data (gitignored)
 └── openclaw/               # Existing openclaw repository (separately cloned, gitignored)
 ```
@@ -28,6 +29,7 @@ openclaw-cloud-run/
 gcloud services enable artifactregistry.googleapis.com
 gcloud services enable run.googleapis.com
 gcloud services enable storage.googleapis.com
+gcloud services enable places.googleapis.com
 ```
 
 ### Authenticate with Google Cloud
@@ -57,9 +59,18 @@ This builds:
 
 ```bash
 ./test-local.sh
+# Or directly:
+docker compose up
 ```
 
 Access the gateway at http://localhost:18789/health
+
+Other useful commands:
+```bash
+docker compose logs -f          # Follow logs
+docker compose down             # Stop and remove containers
+docker compose run openclaw-cli # Run CLI commands
+```
 
 ### 3. Deploy to Cloud Run
 
