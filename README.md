@@ -39,6 +39,10 @@ gcloud config set project YOUR_PROJECT_ID
 
 ## Usage
 
+### 0. Set environment variables
+
+Edit `.env`
+
 ### 1. Build Images Locally
 
 ```bash
@@ -60,9 +64,7 @@ Access the gateway at http://localhost:3000/health
 ### 3. Deploy to Cloud Run
 
 ```bash
-export GCP_PROJECT_ID=your-project-id
-export GCP_REGION=us-central1  # optional, defaults to us-central1
-./deploy-gcloud.sh
+source .env && ./deploy-gcloud.sh
 ```
 
 #### Configuration Environment Variables

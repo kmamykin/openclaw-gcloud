@@ -1,12 +1,18 @@
 #!/bin/bash
 set -e
 
-# Configuration (can be overridden via environment)
-PROJECT_ID="${GCP_PROJECT_ID:-your-project-id}"
-REGION="${GCP_REGION:-us-central1}"
-REPO_NAME="${GCP_REPO_NAME:-openclaw-repo}"
-SERVICE_NAME="${CLOUD_RUN_SERVICE:-openclaw}"
-BUCKET_NAME="${GCS_BUCKET_NAME:-${PROJECT_ID}-openclaw-data}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/.env"
+
+# Configuration (required environment variables)
+PROJECT_ID="${GCP_PROJECT_ID:?GCP_PROJECT_ID must be set}"
+REGION="${GCP_REGION:?GCP_REGION must be set}"
+REPO_NAME="${GCP_REPO_NAME:?GCP_REPO_NAME must be set}"
+SERVICE_NAME="${CLOUD_RUN_SERVICE:?CLOUD_RUN_SERVICE must be set}"
+BUCKET_NAME="${GCS_BUCKET_NAME:?GCS_BUCKET_NAME must be set}"
+GATEWAY_TOKEN="${OPENCLAW_GATEWAY_TOKEN:?OPENCLAW_GATEWAY_TOKEN must be set}"
+GATEWAY_PORT="${OPENCLAW_GATEWAY_PORT:?OPENCLAW_GATEWAY_PORT must be set}"
+GATEWAY_BIND="${OPENCLAW_GATEWAY_BIND:?OPENCLAW_GATEWAY_BIND must be set}"
 IMAGE_NAME="openclaw-cloud"
 
 # Full image path
@@ -55,7 +61,7 @@ gcloud run deploy ${SERVICE_NAME} \
     --region=${REGION} \
     --project=${PROJECT_ID} \
     --execution-environment=gen2 \
-    --port=3000 \
+    --port=${GATEWAY_PORT} \
     --memory=2Gi \
     --cpu=2 \
     --min-instances=0 \
@@ -63,13 +69,14 @@ gcloud run deploy ${SERVICE_NAME} \
     --timeout=3600 \
     --allow-unauthenticated \
     --set-env-vars="NODE_OPTIONS=--max-old-space-size=1536" \
-    --set-env-vars="OPENCLAW_STATE_DIR=/data" \
-    --set-env-vars="OPENCLAW_WORKSPACE_DIR=/data/workspace" \
-    --set-env-vars="OPENCLAW_GATEWAY_BIND=lan" \
+    --set-env-vars="HOME=/home/node" \
+    --set-env-vars="TERM=xterm-256color" \
+    --set-env-vars="OPENCLAW_GATEWAY_TOKEN=${GATEWAY_TOKEN}" \
+    --set-env-vars="OPENCLAW_GATEWAY_BIND=${GATEWAY_BIND}" \
     --add-volume=name=openclaw-data,type=cloud-storage,bucket=${BUCKET_NAME} \
-    --add-volume-mount=volume=openclaw-data,mount-path=/data \
+    --add-volume-mount=volume=openclaw-data,mount-path=/home/node/.openclaw \
     --command="node" \
-    --args="dist/index.js,gateway,--allow-unconfigured,--port,3000,--bind,lan"
+    --args="dist/index.js,gateway,--allow-unconfigured,--port,${GATEWAY_PORT},--bind,${GATEWAY_BIND}"
 
 echo ""
 echo "=== Deployment Complete ==="
