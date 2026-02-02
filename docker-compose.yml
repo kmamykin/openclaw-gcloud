@@ -46,11 +46,18 @@ services:
       HOME: /home/node
       TERM: xterm-256color
       BROWSER: echo
+      # Gateway connection (now points to local gcloud proxy)
       OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN}
-      OPENCLAW_GATEWAY_URL: "ws://host.docker.internal:${OPENCLAW_GATEWAY_PORT:-18789}"
+      OPENCLAW_GATEWAY_URL: "ws://localhost:${OPENCLAW_GATEWAY_PORT:-18789}"
+      OPENCLAW_GATEWAY_PORT: ${OPENCLAW_GATEWAY_PORT:-18789}
+      # GCS bucket mounting
       GCS_BUCKET_NAME: ${GCS_BUCKET_NAME}
+      # gcloud proxy configuration
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID}
+      GCP_REGION: ${GCP_REGION}
+      CLOUD_RUN_SERVICE: ${CLOUD_RUN_SERVICE}
     volumes:
-      - ~/.config/gcloud:/home/node/.config/gcloud:ro
+      - ~/.config/gcloud:/home/node/.config/gcloud
     devices:
       - /dev/fuse:/dev/fuse
     cap_add:
@@ -59,4 +66,4 @@ services:
     tty: true
     init: true
     entrypoint: ["/docker-entrypoint-gcsfuse.sh"]
-    command: ["bash"]
+    command: ["node", "dist/index.js"]
