@@ -53,7 +53,7 @@ if [ ! -f "$TERRAFORM_DIR/terraform.tfvars" ]; then
 fi
 
 # Extract project_id from terraform.tfvars
-PROJECT_ID=$(grep '^project_id' "$TERRAFORM_DIR/terraform.tfvars" | sed 's/.*=\s*"\(.*\)"/\1/' | tr -d ' ')
+PROJECT_ID=$(grep '^project_id' "$TERRAFORM_DIR/terraform.tfvars" | cut -d'"' -f2)
 
 if [ -z "$PROJECT_ID" ] || [ "$PROJECT_ID" = "your-project-id" ]; then
     echo "ERROR: project_id not set in terraform.tfvars"

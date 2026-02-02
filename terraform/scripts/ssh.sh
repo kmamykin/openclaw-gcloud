@@ -12,7 +12,7 @@ cd "$TERRAFORM_DIR"
 # Get instance info from Terraform outputs
 INSTANCE_NAME=$(terraform output -raw instance_name 2>/dev/null)
 INSTANCE_ZONE=$(terraform output -raw instance_zone 2>/dev/null)
-PROJECT_ID=$(terraform output -json | grep -A 1 '"ssh_command"' | grep 'project=' | sed 's/.*project=\([^"]*\).*/\1/')
+PROJECT_ID=$(grep '^project_id' terraform.tfvars 2>/dev/null | cut -d'"' -f2)
 GATEWAY_PORT=$(grep '^openclaw_gateway_port' terraform.tfvars 2>/dev/null | sed 's/.*=\s*\([0-9]*\).*/\1/' || echo "18789")
 
 if [ -z "$INSTANCE_NAME" ] || [ -z "$INSTANCE_ZONE" ]; then
