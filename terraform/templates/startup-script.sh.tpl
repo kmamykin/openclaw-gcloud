@@ -88,41 +88,70 @@ npm install -g "openclaw@$OPENCLAW_VERSION"
 INSTALLED_VERSION=$(openclaw --version 2>/dev/null || echo "unknown")
 echo "OpenClaw version installed: $INSTALLED_VERSION"
 
-# Install gog CLI
-if ! command -v gog > /dev/null 2>&1 || [ "$(gog --version 2>/dev/null | awk '{print $2}')" != "$GOG_VERSION" ]; then
-    echo "Installing gog CLI v$GOG_VERSION..."
+# Install gog CLI (optional - don't fail if unavailable)
+echo "Installing gog CLI v$GOG_VERSION..."
+ARCH=$(uname -m)
+case "$ARCH" in
+    x86_64)
+        GOG_ARCH="amd64"
+        ;;
+    aarch64|arm64)
+        GOG_ARCH="arm64"
+        ;;
+    *)
+        echo "Unsupported architecture: $ARCH, skipping gog"
+        GOG_ARCH=""
+        ;;
+esac
 
-    # Detect architecture
-    ARCH=$(uname -m)
-    case "$ARCH" in
-        x86_64)
-            GOG_ARCH="amd64"
-            ;;
-        aarch64|arm64)
-            GOG_ARCH="arm64"
-            ;;
-        *)
-            echo "Unsupported architecture: $ARCH"
-            exit 1
-            ;;
-    esac
-
+if [ -n "$GOG_ARCH" ] && ! command -v gog &> /dev/null; then
     GOG_URL="https://github.com/cloudfuse-io/gog/releases/download/v$GOG_VERSION/gog_$${GOG_VERSION}_linux_$GOG_ARCH.tar.gz"
     echo "Downloading gog from: $GOG_URL"
 
-    wget -q "$GOG_URL" -O /tmp/gog.tar.gz
-    tar -xzf /tmp/gog.tar.gz -C /usr/local/bin gog
-    chmod +x /usr/local/bin/gog
-    rm /tmp/gog.tar.gz
+    if wget -q "$GOG_URL" -O /tmp/gog.tar.gz 2>/dev/null; then
+        tar -xzf /tmp/gog.tar.gz -C /usr/local/bin gog 2>/dev/null || true
+        chmod +x /usr/local/bin/gog 2>/dev/null || true
+        rm /tmp/gog.tar.gz
+        echo "gog installation complete"
+    else
+        echo "WARNING: gog download failed (optional tool, continuing)"
+    fi
 fi
 
-GOG_VERSION_INSTALLED=$(gog --version 2>/dev/null || echo "unknown")
+GOG_VERSION_INSTALLED=$(gog --version 2>/dev/null || echo "not installed")
 echo "gog version installed: $GOG_VERSION_INSTALLED"
 
 # Create .openclaw directory
 echo "Creating OpenClaw data directory..."
 mkdir -p /home/node/.openclaw
 chown -R node:node /home/node/.openclaw
+
+# Initialize openclaw configuration
+echo "Initializing openclaw configuration..."
+sudo -u node bash -c "
+    export HOME=/home/node
+    cd /home/node
+
+    # Create minimal openclaw config
+    mkdir -p /home/node/.openclaw/workspace
+
+    cat > /home/node/.openclaw/openclaw.json << 'CONFIGEOF'
+{
+  \"gateway\": {
+    \"auth\": {
+      \"token\": \"$GATEWAY_TOKEN\"
+    },
+    \"port\": $GATEWAY_PORT,
+    \"bind\": \"$GATEWAY_BIND\"
+  }
+}
+CONFIGEOF
+
+    # Set proper permissions
+    chmod 600 /home/node/.openclaw/openclaw.json
+"
+
+echo "openclaw configuration created"
 
 # Create systemd service
 echo "Creating systemd service..."
@@ -142,7 +171,7 @@ Environment="OPENCLAW_GATEWAY_PORT=$GATEWAY_PORT"
 Environment="OPENCLAW_GATEWAY_BIND=$GATEWAY_BIND"
 Environment="HOME=/home/node"
 Environment="NODE_ENV=production"
-ExecStart=/usr/bin/openclaw gateway start
+ExecStart=/usr/bin/openclaw gateway
 Restart=on-failure
 RestartSec=10s
 StandardOutput=journal

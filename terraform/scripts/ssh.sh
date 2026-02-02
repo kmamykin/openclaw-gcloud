@@ -13,7 +13,7 @@ cd "$TERRAFORM_DIR"
 INSTANCE_NAME=$(terraform output -raw instance_name 2>/dev/null)
 INSTANCE_ZONE=$(terraform output -raw instance_zone 2>/dev/null)
 PROJECT_ID=$(grep '^project_id' terraform.tfvars 2>/dev/null | cut -d'"' -f2)
-GATEWAY_PORT=$(grep '^openclaw_gateway_port' terraform.tfvars 2>/dev/null | sed 's/.*=\s*\([0-9]*\).*/\1/' || echo "18789")
+GATEWAY_PORT=$(grep '^openclaw_gateway_port' terraform.tfvars 2>/dev/null | awk -F'=' '{print $2}' | tr -d ' ' || echo "18789")
 
 if [ -z "$INSTANCE_NAME" ] || [ -z "$INSTANCE_ZONE" ]; then
     echo "ERROR: Could not get instance information from Terraform"
@@ -29,7 +29,8 @@ case "$MODE" in
         gcloud compute ssh "$INSTANCE_NAME" \
             --zone="$INSTANCE_ZONE" \
             --tunnel-through-iap \
-            --project="$PROJECT_ID"
+            --project="$PROJECT_ID" \
+            -- -L "${GATEWAY_PORT}:localhost:${GATEWAY_PORT}"
         ;;
 
     forward)

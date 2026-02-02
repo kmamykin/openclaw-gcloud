@@ -3,7 +3,7 @@
 
 terraform {
   backend "gcs" {
-    bucket = "REPLACE_WITH_PROJECT_ID-terraform-state"
+    bucket = "openclaw-kmamyk-terraform-state"
     prefix = "openclaw/compute"
   }
 }
