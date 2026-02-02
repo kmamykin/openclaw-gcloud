@@ -53,6 +53,30 @@ resource "google_compute_disk" "data" {
   }
 }
 
+# Cloud Router for Cloud NAT
+resource "google_compute_router" "nat_router" {
+  name    = "${var.instance_name}-nat-router"
+  region  = var.region
+  network = "default"
+
+  description = "Router for Cloud NAT to allow internet access without external IP"
+}
+
+# Cloud NAT for outbound internet access
+resource "google_compute_router_nat" "nat_gateway" {
+  name   = "${var.instance_name}-nat-gateway"
+  router = google_compute_router.nat_router.name
+  region = google_compute_router.nat_router.region
+
+  nat_ip_allocate_option             = "AUTO_ONLY"
+  source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
+
+  log_config {
+    enable = true
+    filter = "ERRORS_ONLY"
+  }
+}
+
 # Firewall rule to allow SSH from IAP
 resource "google_compute_firewall" "iap_ssh" {
   name    = "allow-iap-ssh-${var.instance_name}"
