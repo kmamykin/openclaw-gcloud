@@ -44,7 +44,6 @@ gcloud run deploy ${SERVICE_NAME} \
     --min-instances=1 \
     --max-instances=1 \
     --timeout=3600 \
-    --allow-unauthenticated \
     --set-env-vars="NODE_OPTIONS=--max-old-space-size=1536" \
     --set-env-vars="HOME=/home/node" \
     --set-env-vars="TERM=xterm-256color" \
@@ -53,7 +52,7 @@ gcloud run deploy ${SERVICE_NAME} \
     --add-volume=name=openclaw-data,type=cloud-storage,bucket=${BUCKET_NAME} \
     --add-volume-mount=volume=openclaw-data,mount-path=/home/node/.openclaw \
     --command="/bin/sh" \
-    --args="-c,node /app/dist/index.js gateway --allow-unconfigured --port ${GATEWAY_PORT} --bind ${GATEWAY_BIND}"
+    --args="-c,node /app/dist/index.js gateway --allow-unconfigured --port ${GATEWAY_PORT} --bind ${GATEWAY_BIND} --verbose"
 
 echo ""
 echo "=== Deployment Complete ==="
