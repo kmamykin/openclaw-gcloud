@@ -44,6 +44,7 @@ gcloud run deploy ${SERVICE_NAME} \
     --min-instances=1 \
     --max-instances=1 \
     --timeout=3600 \
+    --no-allow-unauthenticated \
     --set-env-vars="NODE_OPTIONS=--max-old-space-size=1536" \
     --set-env-vars="HOME=/home/node" \
     --set-env-vars="TERM=xterm-256color" \
