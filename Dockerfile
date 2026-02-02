@@ -18,6 +18,19 @@ RUN apt-get update && apt-get install -y curl \
     && chmod +x /usr/local/bin/gog \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Install gcsfuse for GCS bucket mounting
+RUN apt-get update && apt-get install -y lsb-release gnupg \
+    && export GCSFUSE_REPO=gcsfuse-`lsb_release -c -s` \
+    && echo "deb https://packages.cloud.google.com/apt $GCSFUSE_REPO main" | tee /etc/apt/sources.list.d/gcsfuse.list \
+    && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - \
+    && apt-get update \
+    && apt-get install -y gcsfuse \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Copy and setup gcsfuse entrypoint script
+COPY docker-entrypoint-gcsfuse.sh /docker-entrypoint-gcsfuse.sh
+RUN chmod +x /docker-entrypoint-gcsfuse.sh
+
 # Switch back to non-root user
 USER node
 
