@@ -1,208 +1,259 @@
-# Deploy OpenClaw to Google Cloud Run
+# OpenClaw Cloud Deployment
 
-Deploy the OpenClaw application (from the `openclaw` subfolder) to Google Cloud Run using a custom Docker image that includes the `gog` CLI.
+Deploy OpenClaw gateway to Google Cloud Platform with two deployment options:
 
-## Directory Structure
+1. **Terraform + Compute Engine** (Recommended) - ~$1.20/month
+2. **Cloud Run** (Legacy) - ~$21/month
+
+## 🚀 Quick Start
+
+### Option 1: Terraform + Compute Engine (Recommended)
+
+**96% cost savings** compared to Cloud Run!
+
+```bash
+cd terraform/
+cp terraform.tfvars.example terraform.tfvars
+vim terraform.tfvars  # Set project_id and token
+
+./scripts/setup.sh    # One-time setup
+./scripts/deploy.sh   # Deploy infrastructure
+./scripts/ssh.sh forward  # Access gateway
+```
+
+See [terraform/README.md](terraform/README.md) for complete documentation.
+
+**Benefits:**
+- Always Free tier eligible (e2-micro instance)
+- Native Node.js installation (no container overhead)
+- Local disk storage (no GCS FUSE)
+- Infrastructure as code with Terraform
+- Enhanced security (no external IP)
+
+### Option 2: Cloud Run (Legacy)
+
+Traditional containerized deployment:
+
+```bash
+cd cloud-run/
+./build.sh            # Build Docker images
+./gcloud-setup.sh     # One-time GCP setup
+./gcloud-deploy.sh    # Deploy to Cloud Run
+./gcloud-proxy.sh     # Access gateway
+```
+
+See [cloud-run/README.md](cloud-run/README.md) for complete documentation.
+
+## 📁 Project Structure
 
 ```
 openclaw-cloud-run/
-├── Dockerfile              # Custom image (FROM openclaw:latest + gog)
-├── docker-compose.yml      # Local development compose file
-├── build.sh                # Build both images locally
-├── gcloud-setup.sh         # One-time GCP infrastructure setup
-├── gcloud-deploy.sh        # Deploy to Google Cloud Run (idempotent)
-├── test-local.sh           # Convenience wrapper for docker compose up
-├── data/                   # Local persistent data (gitignored)
-└── openclaw/               # Existing openclaw repository (separately cloned, gitignored)
+├── .env                    # Configuration (gitignored)
+├── .envrc                  # direnv configuration
+├── .gitignore              # Git ignore rules
+├── README.md               # This file
+├── cloud-run/              # Cloud Run deployment (legacy)
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   ├── docker-entrypoint-gcsfuse.sh
+│   ├── build.sh
+│   ├── gcloud-setup.sh
+│   ├── gcloud-deploy.sh
+│   ├── gcloud-proxy.sh
+│   ├── gcloud-undeploy.sh
+│   ├── test-local.sh
+│   └── README.md
+└── terraform/              # Terraform deployment (recommended)
+    ├── main.tf
+    ├── variables.tf
+    ├── outputs.tf
+    ├── versions.tf
+    ├── backend.tf
+    ├── terraform.tfvars.example
+    ├── .gitignore
+    ├── README.md
+    ├── templates/
+    │   └── startup-script.sh.tpl
+    └── scripts/
+        ├── setup.sh
+        ├── deploy.sh
+        ├── destroy.sh
+        ├── ssh.sh
+        ├── update-version.sh
+        └── migrate-data.sh
 ```
 
-## Prerequisites
+## 💰 Cost Comparison
 
-### Required Software
+| Component | Cloud Run | Compute Engine (Terraform) |
+|-----------|-----------|----------------------------|
+| Compute | $17.28/month | **FREE** (Always Free e2-micro) |
+| Memory | $3.60/month | **Included** |
+| Storage | $0.002/month (GCS) | $1.20/month (30GB local disk) |
+| Network | Included | **FREE** (no external IP) |
+| **Total** | **~$21/month** | **~$1.20/month** |
+
+**Savings: 96% ($20/month)**
+
+## 🔧 Prerequisites
+
+### Both Deployments
+
+1. **Google Cloud account** with billing enabled
+2. **gcloud CLI** installed and authenticated
+   ```bash
+   gcloud auth login
+   gcloud config set project YOUR_PROJECT_ID
+   ```
+
+### Additional for Cloud Run
 
 - **Docker** installed and running
-- **Google Cloud SDK** (`gcloud`) installed and authenticated
-- A **Google Cloud project** with billing enabled
 
-### Enable Required GCP APIs
+### Additional for Terraform
+
+- **Terraform** >= 1.9
+  ```bash
+  # macOS
+  brew install terraform
+
+  # Linux
+  wget https://releases.hashicorp.com/terraform/1.9.0/terraform_1.9.0_linux_amd64.zip
+  unzip terraform_1.9.0_linux_amd64.zip
+  sudo mv terraform /usr/local/bin/
+  ```
+
+## ⚙️ Configuration
+
+Edit `.env` in the project root:
 
 ```bash
-gcloud services enable artifactregistry.googleapis.com
-gcloud services enable run.googleapis.com
-gcloud services enable storage.googleapis.com
-gcloud services enable places.googleapis.com
+# Required
+export GCP_PROJECT_ID="your-project-id"
+export OPENCLAW_GATEWAY_TOKEN="your-secure-token"  # Generate: openssl rand -hex 32
+
+# Optional
+export GCP_REGION="us-east1"
+export GCP_ZONE="us-east1-b"           # For Terraform deployment
+export OPENCLAW_GATEWAY_PORT="18789"
+export OPENCLAW_GATEWAY_BIND="loopback"  # For Terraform (use "lan" for Cloud Run)
 ```
 
-### Authenticate with Google Cloud
+## 🔄 Migration from Cloud Run to Terraform
+
+If you're currently using Cloud Run:
 
 ```bash
-gcloud auth login
-gcloud config set project YOUR_PROJECT_ID
+# 1. Deploy new Terraform infrastructure
+cd terraform/
+./scripts/deploy.sh
+
+# 2. Wait for startup (5-10 minutes)
+./scripts/ssh.sh status
+
+# 3. Migrate data from GCS to local disk
+./scripts/migrate-data.sh
+
+# 4. Test the new deployment
+./scripts/ssh.sh forward
+# In another terminal:
+curl http://localhost:18789/health
+
+# 5. After successful testing, undeploy Cloud Run
+cd ../cloud-run/
+./gcloud-undeploy.sh
 ```
 
-## Usage
+## 📖 Documentation
 
-### 0. Configure Environment Variables
+- [Terraform Deployment Guide](terraform/README.md) - Complete guide for Compute Engine deployment
+- [Cloud Run Deployment Guide](cloud-run/README.md) - Legacy containerized deployment
 
-Edit `.env` to set the necessary env vars. See the file for descriptions.
+## 🔒 Security
 
-### 1. Build Images Locally
+### Terraform Deployment
 
+- No external IP address
+- SSH access via Identity-Aware Proxy only
+- Gateway binds to loopback (127.0.0.1)
+- Access via SSH port forwarding
+- Minimal service account permissions
+- systemd security hardening
+
+### Cloud Run Deployment
+
+- Requires authentication by default
+- Token-based gateway access
+- GCS FUSE for persistent storage
+- Cloud Run automatic HTTPS
+
+## 🛠️ Common Operations
+
+### Access Gateway
+
+**Terraform:**
 ```bash
+cd terraform/
+./scripts/ssh.sh forward
+# Access at: ws://localhost:18789
+```
+
+**Cloud Run:**
+```bash
+cd cloud-run/
+./gcloud-proxy.sh
+# Access at: ws://localhost:18789
+```
+
+### Check Service Status
+
+**Terraform:**
+```bash
+cd terraform/
+./scripts/ssh.sh status
+./scripts/ssh.sh logs
+```
+
+**Cloud Run:**
+```bash
+gcloud run services describe openclaw-gateway --region=us-east1
+gcloud logging read "resource.type=cloud_run_revision"
+```
+
+### Update OpenClaw Version
+
+**Terraform:**
+```bash
+cd terraform/
+./scripts/update-version.sh 2026.2.1
+```
+
+**Cloud Run:**
+```bash
+cd cloud-run/
+# Update openclaw version in Dockerfile
 ./build.sh
-```
-
-This builds:
-- `openclaw:latest` - Base image from the `openclaw` subfolder
-- `openclaw-cloud:latest` - Extended image with `gog` CLI
-
-### 2. Test Locally
-
-```bash
-./test-local.sh
-# Or directly:
-docker compose up
-```
-
-Access the gateway at http://localhost:18789/health
-
-Other useful commands:
-```bash
-docker compose logs -f          # Follow logs
-docker compose down             # Stop and remove containers
-docker compose run openclaw-cli # Run CLI commands
-```
-
-### 3. One-Time GCP Setup
-
-Run once to set up GCP infrastructure (APIs, Artifact Registry, GCS bucket):
-
-```bash
-./gcloud-setup.sh
-```
-
-### 4. Deploy to Cloud Run
-
-Deploy or update the Cloud Run service (idempotent):
-
-```bash
 ./gcloud-deploy.sh
 ```
 
-## Important Notes
+## 🐛 Troubleshooting
 
-### Cloud Storage FUSE Mount
+### Terraform Issues
 
-- **Persistent storage**: State is stored in a GCS bucket mounted at `/home/node/.openclaw` via Cloud Storage FUSE
-- **Performance**: GCS FUSE adds some latency compared to local disk, but persists state across container restarts
-- **Costs**: GCS storage costs apply (~$0.020/GB/month for standard storage)
-- **Requires Gen2 execution environment**: The deployment uses `--execution-environment=gen2` for volume mount support
+See [terraform/README.md#troubleshooting](terraform/README.md#troubleshooting)
 
-### Cloud Run Considerations
+### Cloud Run Issues
 
-- **WebSocket support**: Cloud Run supports WebSockets, but connections may be interrupted during scale-down
-- **Cold starts**: With `min-instances=0`, there may be cold start latency. Set `min-instances=1` if needed (incurs additional cost)
-- **Timeout**: Set to 3600s (1 hour) for long-running WebSocket connections
-- **Resources**: Configured with 1 vCPU and 2GB memory
+See [cloud-run/README.md#troubleshooting](cloud-run/README.md#troubleshooting)
 
-### Environment Variables Set at Runtime
+## 📝 License
 
-The deployment automatically sets these environment variables:
+See the OpenClaw package for licensing information.
 
-| Variable | Value | Description |
-|----------|-------|-------------|
-| `NODE_OPTIONS` | `--max-old-space-size=1536` | Node.js memory limit |
-| `HOME` | `/home/node` | Home directory for openclaw config |
-| `TERM` | `xterm-256color` | Terminal type |
-| `OPENCLAW_GATEWAY_TOKEN` | from `.env` | Gateway authentication token |
-| `OPENCLAW_GATEWAY_BIND` | from `.env` | Network binding mode |
+## 🤝 Contributing
 
-### Adding API Keys and Secrets
-
-Additional environment variables (API keys, tokens) can be added to the `gcloud-deploy.sh` script or set via Cloud Run console.
-
-#### Option 1: Environment Variables (less secure)
-
-Add to the `gcloud run deploy` command in `gcloud-deploy.sh`:
-
-```bash
---set-env-vars="ANTHROPIC_API_KEY=your-key-here"
-```
-
-#### Option 2: Cloud Run Secrets (recommended)
-
-```bash
-# Create the secret
-echo -n "your-api-key" | gcloud secrets create ANTHROPIC_API_KEY --data-file=-
-
-# Grant Cloud Run access to the secret
-gcloud secrets add-iam-policy-binding ANTHROPIC_API_KEY \
-    --member="serviceAccount:YOUR_PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
-    --role="roles/secretmanager.secretAccessor"
-
-# Add to deployment (modify gcloud-deploy.sh)
---set-secrets="ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest"
-```
-
-Common secrets you might need:
-- `ANTHROPIC_API_KEY` - For Claude models
-- `OPENCLAW_GATEWAY_TOKEN` - For secure gateway access (auto-generated if not set)
-
-## Verification Steps
-
-1. After deployment, the script outputs the Cloud Run service URL
-2. Access `<service-url>/health` to verify the gateway is running
-3. Check logs in Cloud Console: **Cloud Run > openclaw > Logs**
-
-### Verify Binaries Are Installed
-
-To verify `gog` is correctly installed:
-
-```bash
-# Check during local testing
-docker run --rm openclaw-cloud:latest gog --version
-```
-
-## Troubleshooting
-
-### Build Fails
-
-- Ensure Docker is running: `docker info`
-- Ensure the `openclaw` subfolder contains a valid Dockerfile
-- Check network connectivity for downloading binaries from GitHub
-
-### Deployment Fails
-
-- Verify GCP authentication: `gcloud auth list`
-- Ensure billing is enabled on the project
-- Check that required APIs are enabled
-- Verify you have sufficient IAM permissions (Cloud Run Admin, Artifact Registry Admin, Storage Admin)
-
-### Container Won't Start
-
-- Check Cloud Run logs for errors
-- Verify the base `openclaw:latest` image works locally
-- Ensure port 18789 is correctly exposed
-
-### GCS Mount Issues
-
-- Verify the bucket exists and is accessible
-- Check Cloud Run service account has Storage Object Admin role on the bucket
-- Ensure Gen2 execution environment is being used
-
-## Cost Considerations
-
-With the default configuration (`min-instances=1`, `max-instances=1`):
-
-- **Cloud Run**: Container is running all the time. Pay (~$0.00002400/vCPU-second, ~$0.00000250/GiB-second)
-- **Artifact Registry**: ~$0.10/GB/month for stored images
-- **Cloud Storage**: ~$0.020/GB/month for standard storage + operation costs
-- **Network egress**: Varies by destination
-
-To minimize costs:
-- Use a smaller machine type if memory allows
-- Clean up old container images periodically
-
-## License
-
-See the `openclaw` subfolder for the OpenClaw license.
+Contributions welcome! Please ensure:
+- Terraform configurations are validated
+- Scripts are tested
+- Documentation is updated
+- Security best practices are followed

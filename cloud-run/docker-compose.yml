@@ -7,8 +7,8 @@ services:
       OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN}
       OPENCLAW_GATEWAY_BIND: ${OPENCLAW_GATEWAY_BIND:-lan}
     volumes:
-      - ./data:/home/node/.openclaw
-      - ./data/workspace:/home/node/.openclaw/workspace
+      - ../data:/home/node/.openclaw
+      - ../data/workspace:/home/node/.openclaw/workspace
     ports:
       - "${OPENCLAW_GATEWAY_PORT:-18789}:${OPENCLAW_GATEWAY_PORT:-18789}"
     init: true
@@ -33,8 +33,8 @@ services:
       BROWSER: echo
       OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN}
     volumes:
-      - ./data:/home/node/.openclaw
-      - ./data/workspace:/home/node/.openclaw/workspace
+      - ../data:/home/node/.openclaw
+      - ../data/workspace:/home/node/.openclaw/workspace
     stdin_open: true
     tty: true
     init: true

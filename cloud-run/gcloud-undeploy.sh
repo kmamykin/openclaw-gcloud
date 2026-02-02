@@ -2,7 +2,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/.env"
+source "$SCRIPT_DIR/../.env"
 
 PROJECT_ID="${GCP_PROJECT_ID:?GCP_PROJECT_ID must be set}"
 REGION="${GCP_REGION:?GCP_REGION must be set}"

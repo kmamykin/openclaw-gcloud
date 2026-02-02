@@ -1,3 +1,17 @@
 /openclaw
 /data
 .env
+
+# Terraform
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/*.tfplan
+terraform/tfplan
+terraform/tfplan.destroy
+terraform/terraform.tfvars
+terraform/*.auto.tfvars
+
+# Migration data
+migration-data/
