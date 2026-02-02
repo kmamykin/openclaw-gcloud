@@ -14,9 +14,11 @@ openclaw_gateway_token = "your-secure-token-here"
 # region = "us-east1"
 # zone   = "us-east1-b"
 
-# Instance configuration (use e2-micro for free tier)
+# Instance configuration
+# IMPORTANT: e2-micro (1GB RAM) is too small for openclaw installation
+# Recommended: e2-small (2GB RAM, ~$13/month)
 # instance_name = "openclaw-gateway"
-# machine_type  = "e2-micro"
+# machine_type  = "e2-small"
 
 # Disk sizes in GB (30GB total included in free tier)
 # boot_disk_size_gb = 10

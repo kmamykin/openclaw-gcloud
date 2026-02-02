@@ -29,11 +29,11 @@ variable "instance_name" {
 variable "machine_type" {
   description = "Machine type for compute instance"
   type        = string
-  default     = "e2-micro"
+  default     = "e2-small"
 
   validation {
-    condition     = can(regex("^(e2-micro|e2-small|e2-medium|n1-standard-1)$", var.machine_type))
-    error_message = "Machine type must be a valid GCE machine type. Use e2-micro for free tier."
+    condition     = can(regex("^(e2-micro|e2-small|e2-medium|e2-standard-2|n1-standard-1)$", var.machine_type))
+    error_message = "Machine type must be a valid GCE machine type. Recommended: e2-small (e2-micro is too small for openclaw)."
   }
 }
 
