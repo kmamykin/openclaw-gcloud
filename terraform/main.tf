@@ -33,10 +33,6 @@ resource "google_compute_disk" "boot" {
   size  = var.boot_disk_size_gb
 
   labels = var.labels
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 # Data disk for /home directory
@@ -47,10 +43,6 @@ resource "google_compute_disk" "data" {
   size = var.data_disk_size_gb
 
   labels = var.labels
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 # Cloud Router for Cloud NAT
