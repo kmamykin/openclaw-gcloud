@@ -5,26 +5,21 @@ set -e
 # Optionally builds new images first
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
+# Source libraries
+source "${SCRIPT_DIR}/lib/path.sh"
+source "${SCRIPT_DIR}/lib/env.sh"
+source "${SCRIPT_DIR}/lib/validation.sh"
+
+# Get project root and change to it
+PROJECT_ROOT="$(get_project_root)"
 cd "$PROJECT_ROOT"
 
-# Load environment variables
-if [ ! -f .env ]; then
-    echo "ERROR: .env file not found"
-    exit 1
-fi
-
-# Source .env
-set -a
-source .env
-set +a
+# Load environment
+load_env || exit 1
 
 # Validate required variables
-if [ -z "$VM_NAME" ] || [ -z "$GCP_ZONE" ]; then
-    echo "ERROR: VM_NAME and GCP_ZONE must be set in .env"
-    exit 1
-fi
+require_vars VM_NAME GCP_ZONE || exit 1
 
 # Parse arguments
 BUILD_FIRST=0
@@ -52,11 +47,9 @@ if ! gcloud compute instances describe "$VM_NAME" --zone="$GCP_ZONE" &>/dev/null
 fi
 
 # Create docker-compose.yml from template
-echo "Creating docker-compose.yml from template..."
 envsubst < docker-compose.yml.tpl > /tmp/docker-compose.yml
 
 # Copy files to VM
-echo "Copying files to VM..."
 gcloud compute scp /tmp/docker-compose.yml "${VM_NAME}:/home/${GCP_VM_USER}/openclaw/docker-compose.yml" \
     --zone="$GCP_ZONE" \
     --tunnel-through-iap
@@ -82,16 +75,12 @@ set -a
 source .env
 set +a
 
-echo "Pulling latest image..."
 docker compose pull openclaw-gateway
 
-echo "Stopping current container..."
 docker compose down || true
 
-echo "Starting new container..."
 docker compose up -d openclaw-gateway
 
-echo "Waiting for container to be ready..."
 sleep 5
 
 # Check if container is running
@@ -117,7 +106,6 @@ gcloud compute ssh "$VM_NAME" \
 
 # Show logs
 echo ""
-echo "Showing recent logs..."
 gcloud compute ssh "$VM_NAME" \
     --zone="$GCP_ZONE" \
     --tunnel-through-iap \

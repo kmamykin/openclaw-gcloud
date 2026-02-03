@@ -5,26 +5,21 @@ set -e
 # Supports multiple modes: shell, forward, logs, cli, status
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
+# Source libraries
+source "${SCRIPT_DIR}/lib/path.sh"
+source "${SCRIPT_DIR}/lib/env.sh"
+source "${SCRIPT_DIR}/lib/validation.sh"
+
+# Get project root and change to it
+PROJECT_ROOT="$(get_project_root)"
 cd "$PROJECT_ROOT"
 
-# Load environment variables
-if [ ! -f .env ]; then
-    echo "ERROR: .env file not found"
-    exit 1
-fi
-
-# Source .env
-set -a
-source .env
-set +a
+# Load environment
+load_env || exit 1
 
 # Validate required variables
-if [ -z "$VM_NAME" ] || [ -z "$GCP_ZONE" ]; then
-    echo "ERROR: VM_NAME and GCP_ZONE not set in .env"
-    exit 1
-fi
+require_vars VM_NAME GCP_ZONE || exit 1
 
 MODE="${1:-shell}"
 shift || true  # Remove first argument, keep rest for cli commands
@@ -60,7 +55,6 @@ case "$MODE" in
         ;;
 
     status)
-        echo "Checking OpenClaw gateway service status..."
         gcloud compute ssh "$VM_NAME" \
             --zone="$GCP_ZONE" \
             --tunnel-through-iap \
@@ -69,7 +63,6 @@ case "$MODE" in
         ;;
 
     logs)
-        echo "Streaming OpenClaw gateway logs..."
         echo "Press Ctrl+C to stop"
         echo ""
         gcloud compute ssh "$VM_NAME" \
@@ -101,7 +94,6 @@ case "$MODE" in
         ;;
 
     ps)
-        echo "Showing running containers..."
         gcloud compute ssh "$VM_NAME" \
             --zone="$GCP_ZONE" \
             --tunnel-through-iap \

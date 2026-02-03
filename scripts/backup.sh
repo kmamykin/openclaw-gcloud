@@ -5,26 +5,21 @@ set -e
 # Optional disaster recovery tool
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
+# Source libraries
+source "${SCRIPT_DIR}/lib/path.sh"
+source "${SCRIPT_DIR}/lib/env.sh"
+source "${SCRIPT_DIR}/lib/validation.sh"
+
+# Get project root and change to it
+PROJECT_ROOT="$(get_project_root)"
 cd "$PROJECT_ROOT"
 
-# Load environment variables
-if [ ! -f .env ]; then
-    echo "ERROR: .env file not found"
-    exit 1
-fi
-
-# Source .env
-set -a
-source .env
-set +a
+# Load environment
+load_env || exit 1
 
 # Validate required variables
-if [ -z "$VM_NAME" ] || [ -z "$GCP_ZONE" ] || [ -z "$GCS_BUCKET_NAME" ]; then
-    echo "ERROR: VM_NAME, GCP_ZONE, and GCS_BUCKET_NAME must be set in .env"
-    exit 1
-fi
+require_vars VM_NAME GCP_ZONE GCS_BUCKET_NAME || exit 1
 
 ACTION="${1:-backup}"
 
@@ -48,7 +43,6 @@ set -a
 source .env
 set +a
 
-echo "Creating backup timestamp..."
 BACKUP_DATE=$(date +%Y%m%d-%H%M%S)
 BACKUP_PATH="gs://${GCS_BUCKET_NAME}/openclaw-backup/${BACKUP_DATE}"
 
@@ -58,7 +52,6 @@ echo "Backing up to: $BACKUP_PATH"
 cd /home/${GCP_VM_USER}
 tar czf /tmp/openclaw-backup.tar.gz .openclaw/
 
-echo "Uploading to GCS..."
 gsutil cp /tmp/openclaw-backup.tar.gz "$BACKUP_PATH/openclaw-data.tar.gz"
 
 # Also create a "latest" symlink
@@ -121,7 +114,6 @@ docker compose stop openclaw-gateway || true
 echo "Downloading backup from GCS..."
 gsutil cp "gs://${GCS_BUCKET_NAME}/openclaw-backup/latest.tar.gz" /tmp/openclaw-backup.tar.gz
 
-echo "Backing up current data (just in case)..."
 if [ -d "/home/${GCP_VM_USER}/.openclaw" ]; then
     mv "/home/${GCP_VM_USER}/.openclaw" "/home/${GCP_VM_USER}/.openclaw.pre-restore-$(date +%Y%m%d-%H%M%S)"
 fi
@@ -157,8 +149,6 @@ EOFSCRIPT
         ;;
 
     list)
-        echo "Listing available backups..."
-        echo ""
         gsutil ls "gs://$GCS_BUCKET_NAME/openclaw-backup/"
         ;;
 

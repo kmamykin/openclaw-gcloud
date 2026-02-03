@@ -5,25 +5,21 @@ set -e
 # One-time script to create all GCP resources
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
+# Source libraries
+source "${SCRIPT_DIR}/lib/path.sh"
+source "${SCRIPT_DIR}/lib/env.sh"
+source "${SCRIPT_DIR}/lib/validation.sh"
+
+# Get project root and change to it
+PROJECT_ROOT="$(get_project_root)"
 cd "$PROJECT_ROOT"
 
-# Load environment variables
-if [ ! -f .env ]; then
-    echo "ERROR: .env file not found"
-    echo "Please copy .env.example to .env and configure it"
-    exit 1
-fi
-
-# Source .env, handling variable expansion
-set -a
-eval "$(cat .env | grep -v '^#' | sed 's/\${GCP_REGION}/'$GCP_REGION'/g' | sed 's/\${GCP_PROJECT_ID}/'$GCP_PROJECT_ID'/g' | sed 's/\${GCP_REPO_NAME}/'$GCP_REPO_NAME'/g')"
-set +a
+# Load environment with variable expansion
+load_env_expanded || exit 1
 
 # Validate required variables
-if [ -z "$GCP_PROJECT_ID" ]; then
-    echo "ERROR: GCP_PROJECT_ID not set in .env"
+if ! require_vars GCP_PROJECT_ID; then
     exit 1
 fi
 
@@ -60,7 +56,6 @@ fi
 
 # Configure Docker authentication
 echo ""
-echo "Configuring Docker authentication to Artifact Registry..."
 gcloud auth configure-docker "${REGISTRY_HOST}" --quiet
 
 # Create GCS backup bucket (optional)

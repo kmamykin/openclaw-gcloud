@@ -5,26 +5,21 @@ set -e
 # Builds both base openclaw and cloud-extended images
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
+# Source libraries
+source "${SCRIPT_DIR}/lib/path.sh"
+source "${SCRIPT_DIR}/lib/env.sh"
+source "${SCRIPT_DIR}/lib/validation.sh"
+
+# Get project root and change to it
+PROJECT_ROOT="$(get_project_root)"
 cd "$PROJECT_ROOT"
 
-# Load environment variables
-if [ ! -f .env ]; then
-    echo "ERROR: .env file not found"
-    exit 1
-fi
-
-# Source .env
-set -a
-source .env
-set +a
+# Load environment
+load_env || exit 1
 
 # Validate required variables
-if [ -z "$GCP_PROJECT_ID" ] || [ -z "$REGISTRY" ]; then
-    echo "ERROR: GCP_PROJECT_ID and REGISTRY must be set in .env"
-    exit 1
-fi
+require_vars GCP_PROJECT_ID REGISTRY || exit 1
 
 # Check if openclaw directory exists
 if [ ! -d "openclaw" ]; then
@@ -73,7 +68,6 @@ echo "✓ Cloud image built"
 
 # Tag images
 echo ""
-echo "Tagging images..."
 
 # Tag base image
 docker tag openclaw:latest "${REGISTRY}/${IMAGE_NAME_BASE}:${IMAGE_TAG}"
@@ -94,14 +88,12 @@ echo "This may take a few minutes..."
 echo ""
 
 # Push base image
-echo "Pushing base image..."
 docker push "${REGISTRY}/${IMAGE_NAME_BASE}:${IMAGE_TAG}"
 docker push "${REGISTRY}/${IMAGE_NAME_BASE}:latest"
 echo "✓ Pushed base image"
 
 # Push cloud image
 echo ""
-echo "Pushing cloud image..."
 docker push "${REGISTRY}/${IMAGE_NAME_CLOUD}:${IMAGE_TAG}"
 docker push "${REGISTRY}/${IMAGE_NAME_CLOUD}:latest"
 echo "✓ Pushed cloud image"
