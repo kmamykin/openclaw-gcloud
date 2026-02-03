@@ -58,17 +58,17 @@ echo "Tag:         $IMAGE_TAG"
 echo "=========================================="
 echo ""
 
-# Build base image
-echo "Building base image: openclaw:latest..."
+# Build base image for linux/amd64 (GCP VM platform)
+echo "Building base image: openclaw:latest (for linux/amd64)..."
 cd openclaw
-docker build -t openclaw:latest .
+docker buildx build --platform linux/amd64 --load -t openclaw:latest .
 cd ..
 echo "✓ Base image built"
 
 # Build cloud-extended image
 echo ""
-echo "Building cloud image: openclaw-cloud:latest..."
-docker build -f Dockerfile.cloud -t openclaw-cloud:latest .
+echo "Building cloud image: openclaw-cloud:latest (for linux/amd64)..."
+docker buildx build --platform linux/amd64 --load -f Dockerfile.cloud -t openclaw-cloud:latest .
 echo "✓ Cloud image built"
 
 # Tag images

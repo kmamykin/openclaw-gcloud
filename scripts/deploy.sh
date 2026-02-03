@@ -71,7 +71,7 @@ echo "✓ Files copied"
 echo ""
 echo "Deploying container on VM..."
 
-DEPLOY_SCRIPT=$(cat <<'EOFSCRIPT'
+DEPLOY_SCRIPT=$(cat <<EOFSCRIPT
 #!/bin/bash
 set -e
 
@@ -102,23 +102,11 @@ if ! docker compose ps | grep openclaw-gateway | grep -q Up; then
     exit 1
 fi
 
-# Check for first-time setup
-OPENCLAW_CONFIG="/home/${GCP_VM_USER}/.openclaw/openclaw.json"
-if [ ! -f "$OPENCLAW_CONFIG" ]; then
-    echo ""
-    echo "First-time setup detected - running onboarding..."
-
-    # Wait a bit more for gateway to be fully ready
-    sleep 10
-
-    # Run onboarding non-interactively
-    docker compose run --rm openclaw-cli gateway onboard --token "${OPENCLAW_GATEWAY_TOKEN}"
-
-    echo "✓ Onboarding complete"
-fi
-
 echo ""
 echo "Container started successfully"
+echo ""
+echo "Note: Gateway started with --allow-unconfigured flag."
+echo "You can configure it by accessing the UI and running the onboarding wizard."
 EOFSCRIPT
 )
 

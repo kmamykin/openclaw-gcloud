@@ -38,6 +38,7 @@ services:
         "${OPENCLAW_GATEWAY_BIND}",
         "--port",
         "${OPENCLAW_GATEWAY_PORT}",
+        "--allow-unconfigured",
       ]
 
   openclaw-cli:
