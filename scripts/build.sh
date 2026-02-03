@@ -29,16 +29,6 @@ if [ ! -d "openclaw" ]; then
     exit 1
 fi
 
-# Optional: Update openclaw repository
-read -p "Update openclaw repository? (y/N) " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    echo "Updating openclaw repository..."
-    cd openclaw
-    git pull
-    cd ..
-fi
-
 # Generate image tag
 IMAGE_TAG=$(date +%Y%m%d-%H%M%S)
 

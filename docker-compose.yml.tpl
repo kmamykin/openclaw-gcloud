@@ -5,6 +5,7 @@ services:
     image: ${REGISTRY}/openclaw-cloud:latest
     container_name: openclaw-gateway
     restart: unless-stopped
+    network_mode: "host"
     env_file: .env
     environment:
       - HOME=/home/node
@@ -18,8 +19,6 @@ services:
     volumes:
       - /home/${GCP_VM_USER}/.openclaw:/home/node/.openclaw
       - /home/${GCP_VM_USER}/.openclaw/workspace:/home/node/.openclaw/workspace
-    ports:
-      - "127.0.0.1:${OPENCLAW_GATEWAY_PORT}:${OPENCLAW_GATEWAY_PORT}"
     deploy:
       resources:
         limits:
