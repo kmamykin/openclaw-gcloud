@@ -53,7 +53,7 @@ echo "✓ Base image built"
 # Build cloud-extended image
 echo ""
 echo "Building cloud image: openclaw-cloud:latest (for linux/amd64)..."
-docker buildx build --platform linux/amd64 --load -f Dockerfile.cloud -t openclaw-cloud:latest .
+docker buildx build --platform linux/amd64 --load -f Dockerfile -t openclaw-cloud:latest .
 echo "✓ Cloud image built"
 
 # Tag images

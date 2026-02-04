@@ -14,7 +14,7 @@ openclaw-gcloud/
 ├── .envrc                  # direnv configuration (optional)
 ├── .gitignore              # Git ignore rules
 ├── README.md               # This file
-├── Dockerfile.cloud        # Cloud-extended image (adds tools to base openclaw)
+├── Dockerfile              # Cloud-extended image (adds tools to base openclaw)
 ├── docker-compose.yml.tpl  # Template for VM docker-compose.yml
 ├── openclaw/               # Official OpenClaw repository (already checked out, gitignored)
 └── scripts/                # Deployment automation scripts
@@ -50,7 +50,7 @@ openclaw-gcloud/
    - Node.js 22, TypeScript, built UI
 
 2. **openclaw-cloud:latest** (Cloud-Extended Image)
-   - Extends `openclaw:latest` via `Dockerfile.cloud`
+   - Extends `openclaw:latest` via `Dockerfile`
    - Adds cloud-specific tools:
      - gog CLI (Gmail access)
      - vim, curl (utilities)
@@ -79,7 +79,7 @@ openclaw-gcloud/
                    │ (base image)     │
                    └──────────────────┘
                           │
-                          │ Dockerfile.cloud
+                          │ Dockerfile
                           ↓
                    ┌──────────────────┐     docker push      ┌──────────────────┐
                    │ openclaw-cloud   │ ──────────────────> │ Artifact Registry│
@@ -255,7 +255,7 @@ OPENAI_API_KEY=
 1. Verify `./openclaw` directory exists
 2. Optional: `git pull` to update openclaw
 3. Build base image: `cd openclaw && docker build -t openclaw:latest .`
-4. Build cloud image: `docker build -f Dockerfile.cloud -t openclaw-cloud:latest .`
+4. Build cloud image: `docker build -f Dockerfile -t openclaw-cloud:latest .`
 5. Tag both images with timestamp and `:latest`
 6. Push both images to Artifact Registry
 7. Display pushed image info
@@ -376,7 +376,7 @@ openssl rand -hex 32
 **From OpenClaw documentation**:
 > "Installing binaries inside a running container is a trap. Anything installed at runtime will be lost on restart."
 
-**Solution**: All external tools (gog, goplaces, wacli) are baked into the Docker image at build time in `Dockerfile.cloud`.
+**Solution**: All external tools (gog, goplaces, wacli) are baked into the Docker image at build time in `Dockerfile`.
 
 ### Optional Backup
 
@@ -546,7 +546,7 @@ docker-compose pull
 Files to create/configure:
 
 - [ ] `.env` - Copy from `.env.example` and configure
-- [ ] `Dockerfile.cloud` - Cloud-extended image definition
+- [ ] `Dockerfile` - Cloud-extended image definition
 - [ ] `docker-compose.yml.tpl` - Template for VM
 - [ ] `scripts/setup.sh`
 - [ ] `scripts/init-vm.sh`

@@ -28,4 +28,12 @@ RUN chmod +x /usr/local/bin/openclaw
 # Switch back to non-root user
 USER node
 
+# Create SSH config for GitHub
+RUN mkdir -p ~/.ssh && \
+    echo "Host github.com" > ~/.ssh/config && \
+    echo "  Hostname github.com" >> ~/.ssh/config && \
+    echo "  IdentityFile ~/.openclaw/ssh/github_rsa" >> ~/.ssh/config && \
+    echo "  User git" >> ~/.ssh/config && \
+    chmod 600 ~/.ssh/config
+
 # Inherit CMD from base image: node dist/index.js
