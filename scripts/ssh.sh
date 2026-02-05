@@ -93,6 +93,16 @@ case "$MODE" in
             --command="cd /home/${GCP_VM_USER}/openclaw && docker compose run --rm openclaw-cli $@"
         ;;
 
+    exec)
+        echo "Opening bash shell in openclaw-cli container..."
+        echo ""
+        gcloud compute ssh "$VM_NAME" \
+            --zone="$GCP_ZONE" \
+            --tunnel-through-iap \
+            --project="$GCP_PROJECT_ID" \
+            --command="cd /home/${GCP_VM_USER}/openclaw && docker compose run --rm --entrypoint /bin/bash openclaw-cli"
+        ;;
+
     ps)
         gcloud compute ssh "$VM_NAME" \
             --zone="$GCP_ZONE" \
@@ -140,6 +150,7 @@ case "$MODE" in
         echo "  status   - Check systemd service status"
         echo "  logs     - Stream container logs"
         echo "  cli      - Run OpenClaw CLI commands"
+        echo "  exec     - Open bash shell in openclaw-cli container"
         echo "  ps       - Show running containers"
         echo "  restart  - Restart gateway container"
         echo "  stop     - Stop gateway container"
@@ -151,6 +162,7 @@ case "$MODE" in
         echo "  $0 status                   # Check service status"
         echo "  $0 logs                     # Watch logs"
         echo "  $0 cli gateway status       # Run CLI command"
+        echo "  $0 exec                     # Open bash in container"
         echo "  $0 cli gateway info         # Get gateway info"
         echo ""
         exit 1
