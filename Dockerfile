@@ -13,8 +13,16 @@ USER root
 ARG GOG_VERSION=0.9.0
 ARG TARGETARCH
 
-# Install basic utilities and gog CLI
-RUN apt-get update && apt-get install -y curl vim \
+# Install basic utilities, ffmpeg, GitHub CLI, and gog CLI
+RUN apt-get update && apt-get install -y curl vim ffmpeg gnupg \
+    # Install GitHub CLI (gh)
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg -o /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+    && chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" > /etc/apt/sources.list.d/github-cli.list \
+    && apt-get update \
+    && apt-get install -y gh \
+    # Install gog CLI
     && ARCH=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64") \
     && curl -fsSL "https://github.com/steipete/gogcli/releases/download/v${GOG_VERSION}/gogcli_${GOG_VERSION}_linux_${ARCH}.tar.gz" \
        | tar -xzf - -C /usr/local/bin gog \
