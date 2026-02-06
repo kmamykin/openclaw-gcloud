@@ -33,8 +33,14 @@ RUN apt-get update && apt-get install -y curl vim ffmpeg gnupg \
 COPY scripts/docker/openclaw-wrapper.sh /usr/local/bin/openclaw
 RUN chmod +x /usr/local/bin/openclaw
 
+# Install Google Gemini CLI globally (as root)
+RUN npm install -g @google/gemini-cli
+
 # Switch back to non-root user
 USER node
+
+# Copy bash configuration
+COPY scripts/docker/.bashrc /home/node/.bashrc
 
 # Create SSH config for GitHub
 RUN mkdir -p ~/.ssh && \

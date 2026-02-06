@@ -100,7 +100,7 @@ case "$MODE" in
             --zone="$GCP_ZONE" \
             --tunnel-through-iap \
             --project="$GCP_PROJECT_ID" \
-            --command="cd /home/${GCP_VM_USER}/openclaw && docker compose run --rm --entrypoint /bin/bash openclaw-gateway"
+            --command="cd /home/${GCP_VM_USER}/openclaw && docker compose exec openclaw-gateway bash"
         ;;
 
     ps)
