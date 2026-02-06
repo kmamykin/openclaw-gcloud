@@ -2,7 +2,7 @@
 set -e
 
 # SSH helper script for OpenClaw Compute Engine instance
-# Supports multiple modes: shell, forward, logs, cli, status
+# Supports multiple modes: vm-shell, port-forward, shell, logs, cli, status, ps, restart, stop, start
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -21,11 +21,11 @@ load_env || exit 1
 # Validate required variables
 require_vars VM_NAME GCP_ZONE || exit 1
 
-MODE="${1:-shell}"
+MODE="${1:-vm-shell}"
 shift || true  # Remove first argument, keep rest for cli commands
 
 case "$MODE" in
-    shell)
+    vm-shell)
         echo "Opening SSH shell to $VM_NAME..."
         echo "Port forwarding: localhost:${OPENCLAW_GATEWAY_PORT} -> VM:${OPENCLAW_GATEWAY_PORT}"
         echo ""
@@ -36,7 +36,7 @@ case "$MODE" in
             -- -L "${OPENCLAW_GATEWAY_PORT}:localhost:${OPENCLAW_GATEWAY_PORT}"
         ;;
 
-    forward)
+    port-forward)
         echo "Starting port forwarding for OpenClaw gateway..."
         echo ""
         echo "Gateway available at:"
@@ -93,7 +93,7 @@ case "$MODE" in
             --command="cd /home/${GCP_VM_USER}/openclaw && docker compose run --rm openclaw-gateway $@"
         ;;
 
-    bash)
+    shell)
         echo "Opening bash shell in openclaw-gateway container..."
         echo ""
         gcloud compute ssh "$VM_NAME" \
@@ -146,24 +146,24 @@ case "$MODE" in
         echo "Usage: $0 [mode] [args...]"
         echo ""
         echo "Modes:"
-        echo "  shell    - Open interactive SSH shell with port forwarding (default)"
-        echo "  forward  - Start port forwarding for gateway (keeps tunnel open)"
-        echo "  status   - Check systemd service status"
-        echo "  logs     - Stream container logs"
-        echo "  cli      - Run OpenClaw CLI commands"
-        echo "  exec     - Open bash shell in openclaw-cli container"
-        echo "  ps       - Show running containers"
-        echo "  restart  - Restart gateway container"
-        echo "  stop     - Stop gateway container"
-        echo "  start    - Start gateway container"
+        echo "  vm-shell     - Open interactive SSH shell to VM with port forwarding (default)"
+        echo "  port-forward - Start port forwarding for gateway (keeps tunnel open)"
+        echo "  shell        - Open bash shell in openclaw-gateway container"
+        echo "  status       - Check systemd service status"
+        echo "  logs         - Stream container logs"
+        echo "  cli          - Run OpenClaw CLI commands"
+        echo "  ps           - Show running containers"
+        echo "  restart      - Restart gateway container"
+        echo "  stop         - Stop gateway container"
+        echo "  start        - Start gateway container"
         echo ""
         echo "Examples:"
-        echo "  $0                          # Open SSH shell"
-        echo "  $0 forward                  # Forward gateway port"
+        echo "  $0                          # Open SSH shell to VM (default: vm-shell)"
+        echo "  $0 port-forward             # Forward gateway port"
+        echo "  $0 shell                    # Open bash in container"
         echo "  $0 status                   # Check service status"
         echo "  $0 logs                     # Watch logs"
         echo "  $0 cli gateway status       # Run CLI command"
-        echo "  $0 exec                     # Open bash in container"
         echo "  $0 cli gateway info         # Get gateway info"
         echo ""
         exit 1

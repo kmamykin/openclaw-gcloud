@@ -22,7 +22,7 @@ openclaw-gcloud/
     ├── init-vm.sh          # One-time VM initialization
     ├── build.sh            # Build Docker images, push to registry
     ├── deploy.sh           # Deploy/update container on VM
-    ├── ssh.sh              # SSH management (shell, forward, logs, cli)
+    ├── openclaw.sh              # SSH management (shell, forward, logs, cli)
     └── backup.sh           # Backup/restore OpenClaw data (optional)
 ```
 
@@ -277,7 +277,7 @@ OPENAI_API_KEY=
 - Run `openclaw gateway onboard` with token
 - Create initial configuration
 
-### `./scripts/ssh.sh [command]` - SSH Management
+### `./scripts/openclaw.sh [command]` - SSH Management
 **Runs on**: Local machine
 
 **Commands**:
@@ -289,9 +289,9 @@ OPENAI_API_KEY=
 
 **Usage**:
 ```bash
-./scripts/ssh.sh forward          # Access UI at http://localhost:18789
-./scripts/ssh.sh logs             # Watch logs
-./scripts/ssh.sh cli gateway status
+./scripts/openclaw.sh forward          # Access UI at http://localhost:18789
+./scripts/openclaw.sh logs             # Watch logs
+./scripts/openclaw.sh cli gateway status
 ```
 
 ### `./scripts/backup.sh [action]` - Backup Management
@@ -339,7 +339,7 @@ openssl rand -hex 32
 
 ```bash
 # Set up port forwarding (keeps tunnel open)
-./scripts/ssh.sh forward
+./scripts/openclaw.sh forward
 
 # In browser, visit: http://localhost:18789
 # Use token from .env to authenticate
@@ -348,14 +348,14 @@ openssl rand -hex 32
 ### View Logs
 
 ```bash
-./scripts/ssh.sh logs
+./scripts/openclaw.sh logs
 ```
 
 ### Run CLI Commands
 
 ```bash
-./scripts/ssh.sh cli gateway status
-./scripts/ssh.sh cli gateway info
+./scripts/openclaw.sh cli gateway status
+./scripts/openclaw.sh cli gateway info
 ```
 
 ## Data Persistence
@@ -401,7 +401,7 @@ openssl rand -hex 32
 
 ```bash
 # Using script (recommended)
-./scripts/ssh.sh forward
+./scripts/openclaw.sh forward
 
 # Manual command
 gcloud compute ssh ${VM_NAME} \
@@ -500,22 +500,22 @@ services:
 
 ### VM won't start after deploy
 ```bash
-./scripts/ssh.sh logs              # Check logs
-./scripts/ssh.sh status            # Check systemd status
+./scripts/openclaw.sh logs              # Check logs
+./scripts/openclaw.sh status            # Check systemd status
 ```
 
 ### Can't connect to UI
 ```bash
-./scripts/ssh.sh forward           # Verify port forwarding
+./scripts/openclaw.sh forward           # Verify port forwarding
 # Check token matches .env
-./scripts/ssh.sh shell             # SSH to VM
+./scripts/openclaw.sh shell             # SSH to VM
 docker ps                          # Verify container running
 ```
 
 ### Out of memory
 ```bash
 # Check Docker logs
-./scripts/ssh.sh logs
+./scripts/openclaw.sh logs
 
 # Consider upgrading to e2-standard-2 (8GB RAM)
 # Edit .env: MACHINE_TYPE=e2-standard-2
@@ -536,7 +536,7 @@ docker ps
 
 ### Can't pull image on VM
 ```bash
-./scripts/ssh.sh shell
+./scripts/openclaw.sh shell
 gcloud auth configure-docker ${REGISTRY_HOST}
 docker-compose pull
 ```
@@ -552,7 +552,7 @@ Files to create/configure:
 - [ ] `scripts/init-vm.sh`
 - [ ] `scripts/build.sh`
 - [ ] `scripts/deploy.sh`
-- [ ] `scripts/ssh.sh`
+- [ ] `scripts/openclaw.sh`
 - [ ] `scripts/backup.sh`
 
 ## References
