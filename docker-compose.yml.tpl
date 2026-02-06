@@ -33,6 +33,7 @@ services:
         "node",
         "dist/index.js",
         "gateway",
+        "run",
         "--bind",
         "${OPENCLAW_GATEWAY_BIND}",
         "--port",

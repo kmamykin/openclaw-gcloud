@@ -90,17 +90,17 @@ case "$MODE" in
             --zone="$GCP_ZONE" \
             --tunnel-through-iap \
             --project="$GCP_PROJECT_ID" \
-            --command="cd /home/${GCP_VM_USER}/openclaw && docker compose run --rm openclaw-cli $@"
+            --command="cd /home/${GCP_VM_USER}/openclaw && docker compose run --rm openclaw-gateway $@"
         ;;
 
-    exec)
-        echo "Opening bash shell in openclaw-cli container..."
+    bash)
+        echo "Opening bash shell in openclaw-gateway container..."
         echo ""
         gcloud compute ssh "$VM_NAME" \
             --zone="$GCP_ZONE" \
             --tunnel-through-iap \
             --project="$GCP_PROJECT_ID" \
-            --command="cd /home/${GCP_VM_USER}/openclaw && docker compose run --rm --entrypoint /bin/bash openclaw-cli"
+            --command="cd /home/${GCP_VM_USER}/openclaw && docker compose run --rm --entrypoint /bin/bash openclaw-gateway"
         ;;
 
     ps)
