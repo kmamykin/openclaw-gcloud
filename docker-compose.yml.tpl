@@ -16,6 +16,8 @@ services:
       - NODE_OPTIONS=--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOG_KEYRING_BACKEND=${GOG_KEYRING_BACKEND}
+      - GOG_KEYRING_PASSWORD=${GOG_KEYRING_PASSWORD}
     volumes:
       - /home/${GCP_VM_USER}/.openclaw:/home/node/.openclaw
       - /home/${GCP_VM_USER}/.openclaw/workspace:/home/node/.openclaw/workspace
@@ -51,6 +53,8 @@ services:
       - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOG_KEYRING_BACKEND=${GOG_KEYRING_BACKEND}
+      - GOG_KEYRING_PASSWORD=${GOG_KEYRING_PASSWORD}
     volumes:
       - /home/${GCP_VM_USER}/.openclaw:/home/node/.openclaw
       - /home/${GCP_VM_USER}/.openclaw/workspace:/home/node/.openclaw/workspace

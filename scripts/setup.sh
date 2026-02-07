@@ -40,6 +40,20 @@ gcloud services enable compute.googleapis.com --quiet
 gcloud services enable artifactregistry.googleapis.com --quiet
 gcloud services enable iap.googleapis.com --quiet
 
+# Enable Google Workspace APIs for gogcli
+echo "Enabling Google Workspace APIs for gogcli..."
+gcloud services enable gmail.googleapis.com --quiet
+gcloud services enable calendar-json.googleapis.com --quiet
+gcloud services enable chat.googleapis.com --quiet
+gcloud services enable drive.googleapis.com --quiet
+gcloud services enable classroom.googleapis.com --quiet
+gcloud services enable people.googleapis.com --quiet
+gcloud services enable tasks.googleapis.com --quiet
+gcloud services enable sheets.googleapis.com --quiet
+gcloud services enable cloudidentity.googleapis.com --quiet
+gcloud services enable docs.googleapis.com --quiet
+gcloud services enable slides.googleapis.com --quiet
+
 # Create Artifact Registry repository
 echo ""
 echo "Creating Artifact Registry repository..."
