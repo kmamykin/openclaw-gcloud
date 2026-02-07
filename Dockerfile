@@ -13,7 +13,7 @@ USER root
 ARG GOG_VERSION=0.9.0
 ARG TARGETARCH
 
-# Install basic utilities, ffmpeg, GitHub CLI, and gog CLI
+# Install basic utilities, ffmpeg, GitHub CLI, gog CLI, and uv
 RUN apt-get update && apt-get install -y curl vim ffmpeg gnupg \
     # Install GitHub CLI (gh)
     && mkdir -p /etc/apt/keyrings \
@@ -27,6 +27,9 @@ RUN apt-get update && apt-get install -y curl vim ffmpeg gnupg \
     && curl -fsSL "https://github.com/steipete/gogcli/releases/download/v${GOG_VERSION}/gogcli_${GOG_VERSION}_linux_${ARCH}.tar.gz" \
        | tar -xzf - -C /usr/local/bin gog \
     && chmod +x /usr/local/bin/gog \
+    # Install uv (fast Python package installer)
+    && curl -LsSf https://astral.sh/uv/install.sh | sh \
+    && cp /root/.cargo/bin/uv /usr/local/bin/ \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Add openclaw command wrapper
