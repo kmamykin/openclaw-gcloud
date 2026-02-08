@@ -127,6 +127,12 @@ else
     exit 1
 fi
 
+# Create symlink for local testing on macOS
+MACOS_SUPPORT_DIR="${PROJECT_ROOT}/Library/Application Support"
+mkdir -p "$MACOS_SUPPORT_DIR"
+ln -sf "../../.config/gogcli" "${MACOS_SUPPORT_DIR}/gogcli"
+echo "✓ Symlink created for local testing"
+
 # Clean up temp directory
 rm -rf "$TEMP_HOME"
 
