@@ -208,7 +208,7 @@ case "$MODE" in
             --command="cd /home/${GCP_VM_USER}/openclaw && \
                 docker compose cp ${VM_TEMP_PATH} openclaw-gateway:${CONTAINER_TEMP_PATH} && \
                 docker compose exec -T openclaw-gateway ${GOG_CMD} && \
-                docker compose exec -T openclaw-gateway rm -f ${CONTAINER_TEMP_PATH}"
+                docker compose exec -T -u root openclaw-gateway rm -f ${CONTAINER_TEMP_PATH}"
 
         echo ""
         echo "✓ OAuth credentials configured successfully for client: $CLIENT_NAME"
@@ -224,29 +224,66 @@ case "$MODE" in
     gog-auth-add)
         if [ $# -lt 2 ]; then
             echo "ERROR: Missing required arguments"
-            echo "Usage: $0 gog-auth-add <client-name> <email@gmail.com>"
+            echo "Usage: $0 gog-auth-add <client-name> <email@gmail.com> [--port <callback-port>]"
             echo ""
             echo "Examples:"
             echo "  $0 gog-auth-add default you@gmail.com"
             echo "  $0 gog-auth-add work you@company.com"
+            echo ""
+            echo "Note: Gogcli uses a random callback port. To authorize successfully:"
+            echo "1. Run the command once to get the authorization URL and callback port"
+            echo "2. In a separate terminal, run: gcloud compute ssh $VM_NAME --zone=$GCP_ZONE --tunnel-through-iap --project=$GCP_PROJECT_ID -- -N -L <port>:localhost:<port>"
+            echo "3. Visit the authorization URL in your browser"
+            echo "4. Complete the OAuth flow"
             exit 1
         fi
 
         CLIENT_NAME="$1"
         EMAIL="$2"
+        shift 2
 
-        echo "Authorizing Google account: $EMAIL (client: $CLIENT_NAME)"
-        echo ""
-        echo "This will open a browser window for OAuth authorization."
-        echo "If the browser doesn't open automatically, copy the URL from the output."
-        echo ""
+        # Check if user specified a port to forward
+        CALLBACK_PORT=""
+        if [ "$1" = "--port" ] && [ -n "$2" ]; then
+            CALLBACK_PORT="$2"
+            shift 2
+        fi
 
-        gcloud compute ssh "$VM_NAME" \
-            --zone="$GCP_ZONE" \
-            --tunnel-through-iap \
-            --project="$GCP_PROJECT_ID" \
-            --command="cd /home/${GCP_VM_USER}/openclaw && docker compose exec openclaw-gateway gog --client ${CLIENT_NAME} auth add ${EMAIL}" \
-            -- -t
+        if [ -n "$CALLBACK_PORT" ]; then
+            echo "Authorizing Google account: $EMAIL (client: $CLIENT_NAME)"
+            echo "Port forwarding: localhost:$CALLBACK_PORT -> VM:$CALLBACK_PORT"
+            echo ""
+            echo "The authorization URL will open in your browser..."
+            echo ""
+
+            gcloud compute ssh "$VM_NAME" \
+                --zone="$GCP_ZONE" \
+                --tunnel-through-iap \
+                --project="$GCP_PROJECT_ID" \
+                --command="cd /home/${GCP_VM_USER}/openclaw && docker compose exec openclaw-gateway gog --client ${CLIENT_NAME} auth add ${EMAIL}" \
+                -- -t -L "${CALLBACK_PORT}:localhost:${CALLBACK_PORT}"
+        else
+            echo "=========================================="
+            echo "Google OAuth Authorization Setup"
+            echo "=========================================="
+            echo ""
+            echo "Client: $CLIENT_NAME"
+            echo "Email: $EMAIL"
+            echo ""
+            echo "STEP 1: Run this command first to see the callback port:"
+            echo "----------------------------------------"
+            echo "gcloud compute ssh $VM_NAME --zone=$GCP_ZONE --tunnel-through-iap --project=$GCP_PROJECT_ID --command='cd /home/${GCP_VM_USER}/openclaw && docker compose exec openclaw-gateway gog --client ${CLIENT_NAME} auth add ${EMAIL}'"
+            echo ""
+            echo "STEP 2: Look for the port in the URL (e.g., http://127.0.0.1:XXXXX/oauth2/callback)"
+            echo ""
+            echo "STEP 3: Cancel that command (Ctrl+C) and run this with the port:"
+            echo "----------------------------------------"
+            echo "$0 gog-auth-add $CLIENT_NAME $EMAIL --port <PORT_NUMBER>"
+            echo ""
+            echo "Example: $0 gog-auth-add $CLIENT_NAME $EMAIL --port 42313"
+            echo ""
+            exit 0
+        fi
 
         echo ""
         echo "✓ Authorization complete for client: $CLIENT_NAME"
@@ -279,10 +316,11 @@ case "$MODE" in
         echo "  $0 status                                                     # Check service status"
         echo "  $0 logs                                                       # Watch logs"
         echo "  $0 cli gateway status                                         # Run CLI command"
-        echo "  $0 gog-auth-credentials default ~/Downloads/client_secret.json # Configure gogcli"
+        echo "  $0 gog-auth-credentials default ~/Downloads/client_secret.json      # Configure gogcli"
         echo "  $0 gog-auth-credentials work ~/Downloads/work.json --domain company.com"
-        echo "  $0 gog-auth-add default you@gmail.com                        # Authorize Google account"
-        echo "  $0 cli gog --client default gmail labels list                # Test gogcli access"
+        echo "  $0 gog-auth-add default you@gmail.com                               # Show OAuth setup instructions"
+        echo "  $0 gog-auth-add default you@gmail.com --port 42313                  # Authorize with port forward"
+        echo "  $0 cli gog --client default gmail labels list                       # Test gogcli access"
         echo ""
         exit 1
         ;;

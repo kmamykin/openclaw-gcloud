@@ -29,7 +29,8 @@ RUN apt-get update && apt-get install -y curl vim ffmpeg gnupg \
     && chmod +x /usr/local/bin/gog \
     # Install uv (fast Python package installer)
     && curl -LsSf https://astral.sh/uv/install.sh | sh \
-    && cp /root/.cargo/bin/uv /usr/local/bin/ \
+    && cp /root/.local/bin/uv /usr/local/bin/ \
+    && cp /root/.local/bin/uvx /usr/local/bin/ \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Add openclaw command wrapper
