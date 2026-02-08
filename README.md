@@ -302,6 +302,83 @@ OPENAI_API_KEY=
 - `backup` - Sync `~/.openclaw` to GCS
 - `restore` - Sync from GCS to `~/.openclaw`
 
+### `./scripts/gog-auth-local.sh` - Local gogcli Authentication
+**Runs on**: Local machine (Docker container)
+**Requires**: Docker, openclaw-cloud:latest built
+
+**Usage**:
+```bash
+./scripts/gog-auth-local.sh ~/Downloads/client_secret.json default you@gmail.com
+./scripts/gog-auth-local.sh ~/Downloads/work.json work you@company.com --domain company.com
+```
+
+Authenticates gogcli locally via browser OAuth flow with named client support, saves credentials to `.config/gogcli/`.
+
+## gogcli Authentication
+
+### Strategy: Authenticate Locally → Sync to VM → Mount as Volume
+
+**Why?**
+- ✅ Easy local OAuth (no port forwarding)
+- ✅ Credentials NOT in image (safe for registries)
+- ✅ Update without rebuilding
+- ✅ Standard volume mount pattern
+- ✅ Multiple client support (personal, work, etc.)
+
+**Setup:**
+
+```bash
+# 1. Create OAuth credentials in Google Cloud Console
+#    - APIs & Services > Credentials
+#    - Create OAuth 2.0 Client ID (Desktop app)
+#    - Download JSON file
+
+# 2. Set keyring password (if not set)
+echo "GOG_KEYRING_PASSWORD=$(openssl rand -hex 32)" >> .env
+
+# 3. Authenticate locally with named client
+./scripts/gog-auth-local.sh ~/Downloads/client_secret.json default you@gmail.com
+
+# 4. Sync to VM
+./scripts/openclaw.sh gog-sync
+
+# 5. Deploy or restart
+./scripts/deploy.sh
+# OR
+./scripts/openclaw.sh restart
+
+# 6. Test
+./scripts/openclaw.sh cli gog --client default gmail labels list
+```
+
+**Multiple clients:**
+```bash
+# Personal Gmail
+./scripts/gog-auth-local.sh ~/Downloads/personal.json personal you@gmail.com
+./scripts/openclaw.sh gog-sync
+
+# Work Workspace
+./scripts/gog-auth-local.sh ~/Downloads/work.json work you@company.com --domain company.com
+./scripts/openclaw.sh gog-sync
+
+# Test both
+./scripts/openclaw.sh cli gog --client personal gmail labels list
+./scripts/openclaw.sh cli gog --client work gmail labels list
+```
+
+**Update credentials:**
+```bash
+./scripts/gog-auth-local.sh ~/Downloads/new_creds.json default new@gmail.com
+./scripts/openclaw.sh gog-sync
+./scripts/openclaw.sh restart
+```
+
+**Credential storage:**
+- Local: `.config/gogcli/` (gitignored)
+- VM: `/home/openclaw/.config/gogcli/`
+- Container: `/home/node/.config/gogcli/` (volume mount)
+- Image: Does NOT contain credentials ✓
+
 ## Deployment Workflow
 
 ### Initial Setup (One-Time)
@@ -316,6 +393,10 @@ openssl rand -hex 32
 
 # 2. Create GCP infrastructure and initialize VM
 ./scripts/setup.sh
+
+# 2.5. (Optional) Authenticate gogcli for Gmail/Calendar/Drive
+./scripts/gog-auth-local.sh ~/Downloads/client_secret.json default you@gmail.com
+./scripts/openclaw.sh gog-sync
 
 # 3. Build and push initial images
 ./scripts/build.sh

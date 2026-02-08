@@ -34,6 +34,16 @@ if [ $BUILD_FIRST -eq 1 ]; then
     echo ""
 fi
 
+# Check if local credentials exist and prompt to sync
+if [ -d "${PROJECT_ROOT}/.config/gogcli" ] && [ -n "$(ls -A "${PROJECT_ROOT}/.config/gogcli" 2>/dev/null)" ]; then
+    echo "Local gogcli credentials detected"
+    read -p "Sync credentials to VM? [Y/n] " -r
+    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+        "${SCRIPT_DIR}/openclaw.sh" gog-sync
+    fi
+    echo ""
+fi
+
 echo "=========================================="
 echo "Deploying OpenClaw to VM: $VM_NAME"
 echo "=========================================="

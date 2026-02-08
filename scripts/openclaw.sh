@@ -142,185 +142,93 @@ case "$MODE" in
         echo "✓ Gateway started"
         ;;
 
-    gog-auth-credentials)
-        if [ $# -lt 2 ]; then
-            echo "ERROR: Missing required arguments"
-            echo "Usage: $0 gog-auth-credentials <client-name> <path-to-credentials.json> [--domain example.com]"
-            echo ""
-            echo "Examples:"
-            echo "  $0 gog-auth-credentials default ~/Downloads/client_secret_xxx.json"
-            echo "  $0 gog-auth-credentials work ~/Downloads/work.json --domain company.com"
-            echo ""
-            echo "Named clients allow managing separate OAuth credentials for different projects."
-            exit 1
-        fi
-
-        CLIENT_NAME="$1"
-        CREDS_FILE="$2"
-        shift 2  # Remove client name and creds file, keep rest for optional flags
-
-        if [ ! -f "$CREDS_FILE" ]; then
-            echo "ERROR: File not found: $CREDS_FILE"
-            exit 1
-        fi
-
-        echo "Securely uploading OAuth credentials for client: $CLIENT_NAME"
+    gog-sync)
+        echo "Syncing local gogcli credentials to VM..."
         echo ""
 
-        # Generate random temp filename
-        TEMP_NAME="gog_creds_$(date +%s)_$RANDOM.json"
-        VM_TEMP_PATH="/tmp/${TEMP_NAME}"
-        CONTAINER_TEMP_PATH="/tmp/${TEMP_NAME}"
-
-        # Cleanup function
-        cleanup() {
+        # Check local credentials exist
+        if [ ! -d "${PROJECT_ROOT}/.config/gogcli" ]; then
+            echo "ERROR: Local credentials not found"
             echo ""
-            echo "Cleaning up temporary files..."
-            gcloud compute ssh "$VM_NAME" \
-                --zone="$GCP_ZONE" \
-                --tunnel-through-iap \
-                --project="$GCP_PROJECT_ID" \
-                --command="rm -f ${VM_TEMP_PATH} 2>/dev/null || true" 2>/dev/null || true
-        }
-
-        # Set trap to cleanup on exit
-        trap cleanup EXIT
-
-        # Copy to VM
-        echo "→ Copying credentials to VM..."
-        gcloud compute scp "$CREDS_FILE" "${VM_NAME}:${VM_TEMP_PATH}" \
-            --zone="$GCP_ZONE" \
-            --tunnel-through-iap \
-            --project="$GCP_PROJECT_ID"
-
-        # Build gog command with optional flags
-        GOG_CMD="gog --client ${CLIENT_NAME} auth credentials ${CONTAINER_TEMP_PATH}"
-        if [ $# -gt 0 ]; then
-            GOG_CMD="${GOG_CMD} $@"
+            echo "Run local authentication first:"
+            echo "  ./scripts/gog-auth-local.sh ~/Downloads/client_secret.json default you@gmail.com"
+            echo ""
+            exit 1
         fi
 
-        # Copy to container, run gog command, delete from container, all in one SSH session
-        echo "→ Configuring gogcli in container for client: $CLIENT_NAME"
+        if [ -z "$(ls -A "${PROJECT_ROOT}/.config/gogcli")" ]; then
+            echo "ERROR: Credentials directory is empty"
+            echo ""
+            echo "Run local authentication first:"
+            echo "  ./scripts/gog-auth-local.sh ~/Downloads/client_secret.json default you@gmail.com"
+            echo ""
+            exit 1
+        fi
+
+        # Create VM directory
+        echo "→ Creating directory on VM..."
         gcloud compute ssh "$VM_NAME" \
             --zone="$GCP_ZONE" \
             --tunnel-through-iap \
             --project="$GCP_PROJECT_ID" \
-            --command="cd /home/${GCP_VM_USER}/openclaw && \
-                docker compose cp ${VM_TEMP_PATH} openclaw-gateway:${CONTAINER_TEMP_PATH} && \
-                docker compose exec -T openclaw-gateway ${GOG_CMD} && \
-                docker compose exec -T -u root openclaw-gateway rm -f ${CONTAINER_TEMP_PATH}"
+            --command="mkdir -p ~/.config/gogcli"
+
+        # Copy recursively
+        echo "→ Copying credentials to VM..."
+        gcloud compute scp --recurse \
+            "${PROJECT_ROOT}/.config/gogcli" \
+            "${VM_NAME}:~/.config/" \
+            --zone="$GCP_ZONE" \
+            --tunnel-through-iap \
+            --project="$GCP_PROJECT_ID"
+
+        # Verify
+        echo "→ Verifying sync..."
+        gcloud compute ssh "$VM_NAME" \
+            --zone="$GCP_ZONE" \
+            --tunnel-through-iap \
+            --project="$GCP_PROJECT_ID" \
+            --command="ls -la ~/.config/gogcli/"
 
         echo ""
-        echo "✓ OAuth credentials configured successfully for client: $CLIENT_NAME"
+        echo "✓ Credentials synced successfully"
         echo ""
         echo "Next steps:"
-        echo "1. Authorize your account:"
-        echo "   $0 gog-auth-add $CLIENT_NAME your-email@gmail.com"
+        echo ""
+        echo "1. Restart containers to mount credentials:"
+        echo "   $0 restart"
         echo ""
         echo "2. Test access:"
-        echo "   $0 cli gog --client $CLIENT_NAME gmail labels list"
-        ;;
-
-    gog-auth-add)
-        if [ $# -lt 2 ]; then
-            echo "ERROR: Missing required arguments"
-            echo "Usage: $0 gog-auth-add <client-name> <email@gmail.com> [--port <callback-port>]"
-            echo ""
-            echo "Examples:"
-            echo "  $0 gog-auth-add default you@gmail.com"
-            echo "  $0 gog-auth-add work you@company.com"
-            echo ""
-            echo "Note: Gogcli uses a random callback port. To authorize successfully:"
-            echo "1. Run the command once to get the authorization URL and callback port"
-            echo "2. In a separate terminal, run: gcloud compute ssh $VM_NAME --zone=$GCP_ZONE --tunnel-through-iap --project=$GCP_PROJECT_ID -- -N -L <port>:localhost:<port>"
-            echo "3. Visit the authorization URL in your browser"
-            echo "4. Complete the OAuth flow"
-            exit 1
-        fi
-
-        CLIENT_NAME="$1"
-        EMAIL="$2"
-        shift 2
-
-        # Check if user specified a port to forward
-        CALLBACK_PORT=""
-        if [ "$1" = "--port" ] && [ -n "$2" ]; then
-            CALLBACK_PORT="$2"
-            shift 2
-        fi
-
-        if [ -n "$CALLBACK_PORT" ]; then
-            echo "Authorizing Google account: $EMAIL (client: $CLIENT_NAME)"
-            echo "Port forwarding: localhost:$CALLBACK_PORT -> VM:$CALLBACK_PORT"
-            echo ""
-            echo "The authorization URL will open in your browser..."
-            echo ""
-
-            gcloud compute ssh "$VM_NAME" \
-                --zone="$GCP_ZONE" \
-                --tunnel-through-iap \
-                --project="$GCP_PROJECT_ID" \
-                --command="cd /home/${GCP_VM_USER}/openclaw && docker compose exec openclaw-gateway gog --client ${CLIENT_NAME} auth add ${EMAIL}" \
-                -- -t -L "${CALLBACK_PORT}:localhost:${CALLBACK_PORT}"
-        else
-            echo "=========================================="
-            echo "Google OAuth Authorization Setup"
-            echo "=========================================="
-            echo ""
-            echo "Client: $CLIENT_NAME"
-            echo "Email: $EMAIL"
-            echo ""
-            echo "STEP 1: Run this command first to see the callback port:"
-            echo "----------------------------------------"
-            echo "gcloud compute ssh $VM_NAME --zone=$GCP_ZONE --tunnel-through-iap --project=$GCP_PROJECT_ID --command='cd /home/${GCP_VM_USER}/openclaw && docker compose exec openclaw-gateway gog --client ${CLIENT_NAME} auth add ${EMAIL}'"
-            echo ""
-            echo "STEP 2: Look for the port in the URL (e.g., http://127.0.0.1:XXXXX/oauth2/callback)"
-            echo ""
-            echo "STEP 3: Cancel that command (Ctrl+C) and run this with the port:"
-            echo "----------------------------------------"
-            echo "$0 gog-auth-add $CLIENT_NAME $EMAIL --port <PORT_NUMBER>"
-            echo ""
-            echo "Example: $0 gog-auth-add $CLIENT_NAME $EMAIL --port 42313"
-            echo ""
-            exit 0
-        fi
-
+        echo "   $0 cli gog auth status"
+        echo "   $0 cli gog gmail labels list"
         echo ""
-        echo "✓ Authorization complete for client: $CLIENT_NAME"
-        echo ""
-        echo "Test with:"
-        echo "  $0 cli gog --client $CLIENT_NAME gmail labels list"
         ;;
 
     *)
         echo "Usage: $0 [mode] [args...]"
         echo ""
         echo "Modes:"
-        echo "  vm-shell              - Open interactive SSH shell to VM with port forwarding (default)"
-        echo "  port-forward          - Start port forwarding for gateway (keeps tunnel open)"
-        echo "  shell                 - Open bash shell in openclaw-gateway container"
-        echo "  status                - Check systemd service status"
-        echo "  logs                  - Stream container logs"
-        echo "  cli                   - Run OpenClaw CLI commands"
-        echo "  ps                    - Show running containers"
-        echo "  restart               - Restart gateway container"
-        echo "  stop                  - Stop gateway container"
-        echo "  start                 - Start gateway container"
-        echo "  gog-auth-credentials  - Securely configure gogcli OAuth credentials"
-        echo "  gog-auth-add          - Authorize Google account for gogcli"
+        echo "  vm-shell      - Open interactive SSH shell to VM with port forwarding (default)"
+        echo "  port-forward  - Start port forwarding for gateway (keeps tunnel open)"
+        echo "  shell         - Open bash shell in openclaw-gateway container"
+        echo "  status        - Check systemd service status"
+        echo "  logs          - Stream container logs"
+        echo "  cli           - Run OpenClaw CLI commands"
+        echo "  ps            - Show running containers"
+        echo "  restart       - Restart gateway container"
+        echo "  stop          - Stop gateway container"
+        echo "  start         - Start gateway container"
+        echo "  gog-sync      - Sync local gogcli credentials to VM"
         echo ""
         echo "Examples:"
-        echo "  $0                                                            # Open SSH shell to VM"
-        echo "  $0 port-forward                                               # Forward gateway port"
-        echo "  $0 shell                                                      # Open bash in container"
-        echo "  $0 status                                                     # Check service status"
-        echo "  $0 logs                                                       # Watch logs"
-        echo "  $0 cli gateway status                                         # Run CLI command"
-        echo "  $0 gog-auth-credentials default ~/Downloads/client_secret.json      # Configure gogcli"
-        echo "  $0 gog-auth-credentials work ~/Downloads/work.json --domain company.com"
-        echo "  $0 gog-auth-add default you@gmail.com                               # Show OAuth setup instructions"
-        echo "  $0 gog-auth-add default you@gmail.com --port 42313                  # Authorize with port forward"
-        echo "  $0 cli gog --client default gmail labels list                       # Test gogcli access"
+        echo "  $0                                           # Open SSH shell to VM"
+        echo "  $0 port-forward                              # Forward gateway port"
+        echo "  $0 shell                                     # Open bash in container"
+        echo "  $0 status                                    # Check service status"
+        echo "  $0 logs                                      # Watch logs"
+        echo "  $0 cli gateway status                        # Run CLI command"
+        echo "  $0 gog-sync                                  # Sync gogcli credentials to VM"
+        echo "  $0 cli gog --client default gmail labels list    # Test gogcli access"
         echo ""
         exit 1
         ;;

@@ -43,6 +43,9 @@ RUN npm install -g @google/gemini-cli
 # Switch back to non-root user
 USER node
 
+# Create placeholder for gogcli credentials (mounted as volume)
+RUN mkdir -p ~/.config/gogcli
+
 # Copy bash configuration
 COPY scripts/docker/.bashrc /home/node/.bashrc
 

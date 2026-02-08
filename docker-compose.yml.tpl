@@ -19,6 +19,7 @@ services:
     volumes:
       - /home/${GCP_VM_USER}/.openclaw:/home/node/.openclaw
       - /home/${GCP_VM_USER}/.openclaw/workspace:/home/node/.openclaw/workspace
+      - /home/${GCP_VM_USER}/.config/gogcli:/home/node/.config/gogcli
     deploy:
       resources:
         limits:
@@ -56,6 +57,7 @@ services:
     volumes:
       - /home/${GCP_VM_USER}/.openclaw:/home/node/.openclaw
       - /home/${GCP_VM_USER}/.openclaw/workspace:/home/node/.openclaw/workspace
+      - /home/${GCP_VM_USER}/.config/gogcli:/home/node/.config/gogcli
     stdin_open: true
     tty: true
     init: true
