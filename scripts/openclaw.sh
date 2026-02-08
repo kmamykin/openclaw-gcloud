@@ -86,11 +86,17 @@ case "$MODE" in
 
         echo "Running OpenClaw CLI command: $@"
         echo ""
+        # Build command with proper quoting for arguments
+        CLI_ARGS=""
+        for arg in "$@"; do
+            # Escape quotes and wrap in quotes
+            CLI_ARGS="${CLI_ARGS} \"${arg}\""
+        done
         gcloud compute ssh "$VM_NAME" \
             --zone="$GCP_ZONE" \
             --tunnel-through-iap \
             --project="$GCP_PROJECT_ID" \
-            --command="cd /home/${GCP_VM_USER}/openclaw && docker compose run --rm openclaw-gateway $@"
+            --command="cd /home/${GCP_VM_USER}/openclaw && docker compose run --rm openclaw-gateway ${CLI_ARGS}"
         ;;
 
     shell)
@@ -181,6 +187,14 @@ case "$MODE" in
             --zone="$GCP_ZONE" \
             --tunnel-through-iap \
             --project="$GCP_PROJECT_ID"
+
+        # Fix ownership and permissions (files come from Mac with Mac UID, need to be readable in container)
+        echo "→ Fixing file ownership and permissions..."
+        gcloud compute ssh "$VM_NAME" \
+            --zone="$GCP_ZONE" \
+            --tunnel-through-iap \
+            --project="$GCP_PROJECT_ID" \
+            --command="chown -R ${GCP_VM_USER}:${GCP_VM_USER} ~/.config/gogcli && chmod -R u+rw,go+r ~/.config/gogcli && chmod -R go+rx ~/.config/gogcli/*/"
 
         # Verify
         echo "→ Verifying sync..."
