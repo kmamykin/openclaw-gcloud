@@ -61,12 +61,14 @@ if [ -z "$GOG_KEYRING_PASSWORD" ]; then
     exit 1
 fi
 
-# Check Docker image exists
-if ! docker image inspect openclaw-cloud:latest >/dev/null 2>&1; then
-    echo "ERROR: Docker image 'openclaw-cloud:latest' not found"
+# Check if gog is installed locally
+if ! command -v gog &> /dev/null; then
+    echo "ERROR: 'gog' command not found"
     echo ""
-    echo "Build the image first:"
-    echo "  ./scripts/build.sh"
+    echo "Install gogcli locally:"
+    echo "  brew install steipete/tap/gogcli"
+    echo ""
+    echo "Or download from: https://github.com/steipete/gogcli/releases"
     echo ""
     exit 1
 fi
@@ -83,31 +85,30 @@ echo "Client name: $CLIENT_NAME"
 echo "Email: $EMAIL"
 echo "Credentials: $(basename "$CREDS_FILE")"
 echo ""
-echo "Starting OAuth flow in local container..."
+echo "Starting OAuth flow on local machine..."
 echo "Your browser will open for authorization."
 echo ""
 
-# Copy credentials to temp location accessible by container
-TEMP_CREDS="/tmp/gog_creds_$(date +%s)_$RANDOM.json"
-cp "$CREDS_FILE" "$TEMP_CREDS"
-trap "rm -f $TEMP_CREDS" EXIT
+# Set up environment for gog
+export GOG_KEYRING_PASSWORD
+export GOG_KEYRING_BACKEND=file
+export HOME="${PROJECT_ROOT}"  # Make gog use .config/gogcli in project root
 
-# Build gog command with optional flags
-GOG_AUTH_CMD="gog --client ${CLIENT_NAME} auth credentials /tmp/creds.json"
+# Step 1: Set up OAuth credentials
+echo "→ Configuring OAuth credentials..."
+GOG_CREDS_CMD="gog --client ${CLIENT_NAME} auth credentials \"${CREDS_FILE}\""
 if [ $# -gt 0 ]; then
-    GOG_AUTH_CMD="${GOG_AUTH_CMD} $@"
+    GOG_CREDS_CMD="${GOG_CREDS_CMD} $@"
 fi
-GOG_AUTH_CMD="${GOG_AUTH_CMD} && gog --client ${CLIENT_NAME} auth add ${EMAIL}"
+eval "$GOG_CREDS_CMD"
 
-# Run in container with volume mounts
-docker run --rm -it \
-    -v "${CONFIG_DIR}:/home/node/.config/gogcli" \
-    -v "${TEMP_CREDS}:/tmp/creds.json:ro" \
-    -e GOG_KEYRING_PASSWORD="$GOG_KEYRING_PASSWORD" \
-    -e GOG_KEYRING_BACKEND=file \
-    --network host \
-    openclaw-cloud:latest \
-    bash -c "$GOG_AUTH_CMD"
+echo ""
+echo "→ Starting OAuth authorization flow..."
+echo "   (Your browser will open shortly)"
+echo ""
+
+# Step 2: Run OAuth flow
+gog --client "${CLIENT_NAME}" auth add "${EMAIL}"
 
 echo ""
 echo "✓ Authentication successful!"
