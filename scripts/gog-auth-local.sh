@@ -73,7 +73,11 @@ if ! command -v gog &> /dev/null; then
     exit 1
 fi
 
-# Create .config/gogcli directory
+# Create temporary HOME for gog (macOS uses Library/Application Support)
+TEMP_HOME="${PROJECT_ROOT}/.gog-temp"
+mkdir -p "$TEMP_HOME"
+
+# Create .config/gogcli directory (Linux format for VM)
 CONFIG_DIR="${PROJECT_ROOT}/.config/gogcli"
 mkdir -p "$CONFIG_DIR"
 
@@ -92,7 +96,7 @@ echo ""
 # Set up environment for gog
 export GOG_KEYRING_PASSWORD
 export GOG_KEYRING_BACKEND=file
-export HOME="${PROJECT_ROOT}"  # Make gog use .config/gogcli in project root
+export HOME="${TEMP_HOME}"  # Temporary HOME for gog
 
 # Step 1: Set up OAuth credentials
 echo "→ Configuring OAuth credentials..."
@@ -109,6 +113,22 @@ echo ""
 
 # Step 2: Run OAuth flow
 gog --client "${CLIENT_NAME}" auth add "${EMAIL}"
+
+echo ""
+echo "→ Converting credentials to Linux format..."
+
+# Copy from macOS format to Linux format
+MACOS_GOG_DIR="${TEMP_HOME}/Library/Application Support/gogcli"
+if [ -d "$MACOS_GOG_DIR" ]; then
+    cp -r "$MACOS_GOG_DIR"/* "$CONFIG_DIR"/
+    echo "✓ Credentials copied to .config/gogcli/"
+else
+    echo "ERROR: Credentials not found at expected location"
+    exit 1
+fi
+
+# Clean up temp directory
+rm -rf "$TEMP_HOME"
 
 echo ""
 echo "✓ Authentication successful!"
