@@ -34,6 +34,7 @@ Host ${host_entry}
     ForwardAgent yes
     StrictHostKeyChecking no
     UserKnownHostsFile /dev/null
+    LogLevel ERROR
 EOF
 
     chmod 600 "$ssh_config"
