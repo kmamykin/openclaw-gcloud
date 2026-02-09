@@ -121,12 +121,9 @@ sudo usermod -aG docker "$GCP_VM_USER"
 sudo -u "$GCP_VM_USER" git config --global user.email 'kmamykin@gmail.com'
 sudo -u "$GCP_VM_USER" git config --global user.name 'Kliment Mamykin'
 
-# Create OpenClaw directories (new layout)
+# Create OpenClaw base directory
 echo "Creating OpenClaw directories..."
 sudo -u "$GCP_VM_USER" mkdir -p "/home/$GCP_VM_USER/openclaw"
-sudo -u "$GCP_VM_USER" mkdir -p "/home/$GCP_VM_USER/openclaw/.openclaw"
-sudo -u "$GCP_VM_USER" mkdir -p "/home/$GCP_VM_USER/openclaw/.openclaw/sessions"
-sudo -u "$GCP_VM_USER" mkdir -p "/home/$GCP_VM_USER/openclaw/.openclaw/.config/gogcli"
 
 # Copy .env to user directory
 echo "Copying .env to OpenClaw directory..."
@@ -134,29 +131,25 @@ sudo cp /tmp/.env "/home/$GCP_VM_USER/openclaw/.env"
 sudo chown "$GCP_VM_USER:$GCP_VM_USER" "/home/$GCP_VM_USER/openclaw/.env"
 sudo chmod 600 "/home/$GCP_VM_USER/openclaw/.env"
 
-# Initialize .openclaw as a git repo
-echo "Initializing .openclaw git repo..."
+# Set up bare repo and working copy for .openclaw git sync
+# The bare repo receives pushes from local machine; the working copy is used by the container.
+# We keep the bare repo empty so that the first `openclaw.sh push` from local populates it
+# without history conflicts (pushing to an empty repo always succeeds).
+echo "Setting up .openclaw git repos..."
 sudo -u "$GCP_VM_USER" bash -c "
-    cd /home/$GCP_VM_USER/openclaw/.openclaw
-    if [ ! -d .git ]; then
-        # Create .gitignore
-        cat > .gitignore <<'GITEOF'
-workspace-*/
-sessions/
-GITEOF
-        # Create placeholder .env
-        touch .env
-        git init
-        git add -A
-        git commit -m 'Initial commit'
-    fi
-"
+    BARE=/home/$GCP_VM_USER/openclaw/.openclaw.git
+    WORK=/home/$GCP_VM_USER/openclaw/.openclaw
 
-# Create bare repo for sync
-echo "Creating bare repo..."
-sudo -u "$GCP_VM_USER" bash -c "
-    if [ ! -d /home/$GCP_VM_USER/openclaw/.openclaw.git ]; then
-        git clone --bare /home/$GCP_VM_USER/openclaw/.openclaw /home/$GCP_VM_USER/openclaw/.openclaw.git
+    if [ ! -d \$BARE ]; then
+        echo 'Creating bare repo...'
+        git init --bare \$BARE
+    fi
+
+    if [ ! -d \$WORK/.git ]; then
+        echo 'Creating working copy...'
+        rm -rf \$WORK
+        git clone \$BARE \$WORK
+        mkdir -p \$WORK/sessions \$WORK/.config/gogcli
     fi
 "
 
