@@ -42,6 +42,8 @@ echo "Enabling required GCP APIs..."
 gcloud services enable compute.googleapis.com --quiet
 gcloud services enable artifactregistry.googleapis.com --quiet
 gcloud services enable iap.googleapis.com --quiet
+gcloud services enable monitoring.googleapis.com --quiet
+gcloud services enable logging.googleapis.com --quiet
 
 # Enable Google Workspace APIs for gogcli
 echo "Enabling Google Workspace APIs for gogcli..."

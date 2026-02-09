@@ -47,6 +47,17 @@ else
     echo "Docker installed successfully"
 fi
 
+# Install Ops Agent for monitoring (memory, disk, etc.)
+if systemctl is-active --quiet google-cloud-ops-agent; then
+    echo "Ops Agent already installed, skipping..."
+else
+    echo "Installing Google Cloud Ops Agent..."
+    curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh
+    sudo bash add-google-cloud-ops-agent-repo.sh --also-install
+    rm -f add-google-cloud-ops-agent-repo.sh
+    echo "Ops Agent installed successfully"
+fi
+
 # Install git if not present
 if ! command -v git &> /dev/null; then
     echo "Installing git..."
