@@ -27,7 +27,7 @@ if ! require_vars GCP_PROJECT_ID; then
 fi
 
 if [ -z "$OPENCLAW_GATEWAY_TOKEN" ]; then
-    echo "ERROR: OPENCLAW_GATEWAY_TOKEN not set in .env"
+    echo "ERROR: OPENCLAW_GATEWAY_TOKEN not set in .openclaw/.env"
     echo "Generate one with: openssl rand -hex 32"
     exit 1
 fi

@@ -34,8 +34,12 @@ openclaw-gcloud/
     ├── deploy.sh               # Deploy/update container on VM
     ├── openclaw.sh             # VM management (shell, forward, logs, cli, sync)
     ├── local.sh                # Local Docker execution (start, stop, logs, build)
-    ├── backup.sh               # Backup/restore OpenClaw data
+    ├── backup.sh               # VM disk snapshot management
+    ├── teardown.sh             # Remove all GCP infrastructure
     ├── gog-auth-local.sh       # Local gogcli OAuth authentication
+    ├── docker/
+    │   ├── openclaw-wrapper.sh # OpenClaw CLI wrapper for container
+    │   └── .bashrc             # Container bash configuration
     └── lib/
         ├── env.sh              # Environment loading (sources both .env files)
         ├── path.sh             # Path resolution utilities
@@ -104,7 +108,7 @@ Both modes use identical Docker images and mount `.openclaw/` the same way.
 | **Registry** | GCP Artifact Registry | Store versioned Docker images |
 | **Networking** | IAP tunnel (no external IP) | Secure SSH and port forwarding |
 | **NAT** | Cloud NAT | Outbound internet without public IP |
-| **Backup** | GCS bucket (optional) | Disaster recovery |
+| **Backup** | VM disk snapshots (daily) | Disaster recovery |
 
 ## Quick Start
 
@@ -176,7 +180,7 @@ echo "export GOG_KEYRING_PASSWORD=$(openssl rand -hex 32)" >> .openclaw/.env
 ## Scripts Reference
 
 ### `./scripts/setup.sh` - Infrastructure Setup
-One-time GCP setup: APIs, Artifact Registry, VM, Cloud NAT, IAP firewall, init-vm.
+One-time GCP setup: APIs, Artifact Registry, VM, Cloud NAT, IAP firewall, snapshot schedule, init-vm.
 
 ### `./scripts/init-vm.sh` - VM Initialization
 Runs on VM: installs Docker + git, creates directories, initializes .openclaw git repo + bare repo, configures Docker auth.
@@ -201,6 +205,8 @@ Runs on VM: installs Docker + git, creates directories, initializes .openclaw gi
 ./scripts/openclaw.sh status        # Container status
 ./scripts/openclaw.sh ps            # Container status
 ./scripts/openclaw.sh restart       # Restart container
+./scripts/openclaw.sh stop          # Stop container
+./scripts/openclaw.sh start         # Start container
 ./scripts/openclaw.sh push          # Push .openclaw and workspace to VM
 ./scripts/openclaw.sh pull          # Pull .openclaw and workspace from VM
 ```
@@ -212,15 +218,16 @@ Runs on VM: installs Docker + git, creates directories, initializes .openclaw gi
 ./scripts/local.sh logs     # Stream logs
 ./scripts/local.sh shell    # Bash in container
 ./scripts/local.sh cli CMD  # Run CLI commands
+./scripts/local.sh restart  # Restart gateway
 ./scripts/local.sh build    # Build local image
 ./scripts/local.sh status   # Container status
 ```
 
-### `./scripts/backup.sh` - Backup/Restore
+### `./scripts/backup.sh` - VM Disk Snapshots
 ```bash
-./scripts/backup.sh backup   # Backup .openclaw to GCS
-./scripts/backup.sh restore  # Restore from GCS
-./scripts/backup.sh list     # List backups
+./scripts/backup.sh snapshot  # Create a disk snapshot (default)
+./scripts/backup.sh list      # List snapshots for this VM
+./scripts/backup.sh delete    # Delete a snapshot
 ```
 
 ### `./scripts/gog-auth-local.sh` - gogcli Authentication
@@ -263,8 +270,8 @@ Runs OAuth flow locally, saves credentials to `.openclaw/.config/gogcli/`.
 | 30GB persistent disk | ~$1.20 |
 | Artifact Registry (~5GB) | ~$0.50 |
 | Cloud NAT | ~$1-2 |
-| GCS backup (minimal) | ~$0.10 |
-| **Total** | **~$27/month** |
+| Disk snapshots (~30GB) | ~$0.78 |
+| **Total** | **~$28/month** |
 
 ## Security
 
