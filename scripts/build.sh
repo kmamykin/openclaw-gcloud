@@ -58,7 +58,7 @@ if [ $LOCAL_BUILD -eq 1 ]; then
     echo "Building cloud image: openclaw-cloud:latest..."
     docker buildx build --load \
         --build-arg BASE_IMAGE="${BASE_IMAGE}" \
-        -f Dockerfile -t openclaw-cloud:latest .
+        -f docker/Dockerfile -t openclaw-cloud:latest docker/
     echo "Cloud image built"
 
     echo ""
@@ -95,7 +95,7 @@ else
     echo "Building cloud image: openclaw-cloud:latest (for linux/amd64)..."
     docker buildx build --platform linux/amd64 --load \
         --build-arg BASE_IMAGE="${BASE_IMAGE}" \
-        -f Dockerfile -t openclaw-cloud:latest .
+        -f docker/Dockerfile -t openclaw-cloud:latest docker/
     echo "Cloud image built"
 
     # Tag cloud image

@@ -2,7 +2,7 @@
 set -e
 
 # Local Docker execution for OpenClaw
-# Uses docker-compose.local.yml to run OpenClaw locally
+# Uses docker/docker-compose.local.yml to run OpenClaw locally
 #
 # Usage:
 #   ./scripts/local.sh start    # Start gateway
@@ -27,7 +27,7 @@ cd "$PROJECT_ROOT"
 # Load environment (only .openclaw/.env needed for local, but load both for consistency)
 load_env || exit 1
 
-COMPOSE_CMD="docker compose -f docker-compose.local.yml"
+COMPOSE_CMD="docker compose --project-directory . -f docker/docker-compose.local.yml"
 
 ACTION="${1:-status}"
 shift || true

@@ -14,9 +14,12 @@ openclaw-gcloud/
 ├── .envrc                      # direnv configuration
 ├── .gitignore                  # Git ignore rules
 ├── README.md                   # This file
-├── Dockerfile                  # Cloud-extended image (adds tools to base openclaw)
-├── docker-compose.yml.tpl      # Template for VM docker-compose.yml
-├── docker-compose.local.yml    # Local Docker execution config
+├── docker/
+│   ├── Dockerfile              # Cloud-extended image (adds tools to base openclaw)
+│   ├── docker-compose.yml.tpl  # Template for VM docker-compose.yml
+│   ├── docker-compose.local.yml # Local Docker execution config
+│   ├── openclaw-wrapper.sh     # OpenClaw CLI wrapper for container
+│   └── .bashrc                 # Container bash configuration
 ├── .openclaw/                  # Separate git repo (synced to VM, gitignored by parent)
 │   ├── .env                    # OpenClaw secrets (gateway token, API keys, gogcli)
 │   ├── .env.example            # Secrets template
@@ -37,9 +40,6 @@ openclaw-gcloud/
     ├── backup.sh               # VM disk snapshot management
     ├── teardown.sh             # Remove all GCP infrastructure
     ├── gog-auth-local.sh       # Local gogcli OAuth authentication
-    ├── docker/
-    │   ├── openclaw-wrapper.sh # OpenClaw CLI wrapper for container
-    │   └── .bashrc             # Container bash configuration
     └── lib/
         ├── env.sh              # Environment loading (sources both .env files)
         ├── path.sh             # Path resolution utilities

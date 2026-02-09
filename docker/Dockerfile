@@ -35,7 +35,7 @@ RUN apt-get update && apt-get install -y curl vim ffmpeg gnupg \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Add openclaw command wrapper
-COPY scripts/docker/openclaw-wrapper.sh /usr/local/bin/openclaw
+COPY openclaw-wrapper.sh /usr/local/bin/openclaw
 RUN chmod +x /usr/local/bin/openclaw
 
 # Install Google Gemini CLI globally (as root)
@@ -50,6 +50,6 @@ RUN mkdir -p ~/.config && \
     ln -sf /home/node/.openclaw/.config/gogcli /home/node/.config/gogcli
 
 # Copy bash configuration
-COPY scripts/docker/.bashrc /home/node/.bashrc
+COPY .bashrc /home/node/.bashrc
 
 # Inherit CMD from base image: node dist/index.js

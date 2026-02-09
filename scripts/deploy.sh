@@ -65,7 +65,7 @@ if ! gcloud compute instances describe "$VM_NAME" --zone="$GCP_ZONE" &>/dev/null
 fi
 
 # Create docker-compose.yml from template
-envsubst < docker-compose.yml.tpl > /tmp/docker-compose.yml
+envsubst < docker/docker-compose.yml.tpl > /tmp/docker-compose.yml
 
 # Copy files to VM
 scp /tmp/docker-compose.yml "$VM_HOST:$VM_DIR/docker-compose.yml"
