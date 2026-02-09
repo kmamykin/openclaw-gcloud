@@ -60,7 +60,7 @@ case "$MODE" in
             --zone="$GCP_ZONE" \
             --tunnel-through-iap \
             --project="$GCP_PROJECT_ID" \
-            --command="sudo systemctl status openclaw-gateway"
+            --command="cd /home/${GCP_VM_USER}/openclaw && docker compose ps"
         ;;
 
     logs)
@@ -274,7 +274,7 @@ case "$MODE" in
         echo "  vm-shell      - Open interactive SSH shell to VM with port forwarding (default)"
         echo "  port-forward  - Start port forwarding for gateway (keeps tunnel open)"
         echo "  shell         - Open bash shell in openclaw-gateway container"
-        echo "  status        - Check systemd service status"
+        echo "  status        - Show container status"
         echo "  logs          - Stream container logs"
         echo "  cli           - Run OpenClaw CLI commands"
         echo "  ps            - Show running containers"

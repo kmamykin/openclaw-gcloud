@@ -36,7 +36,6 @@ openclaw-gcloud/
     ├── local.sh                # Local Docker execution (start, stop, logs, build)
     ├── backup.sh               # Backup/restore OpenClaw data
     ├── gog-auth-local.sh       # Local gogcli OAuth authentication
-    ├── vm-git-init.sh          # One-time VM restructure to git-based sync
     └── lib/
         ├── env.sh              # Environment loading (sources both .env files)
         ├── path.sh             # Path resolution utilities
@@ -183,7 +182,7 @@ echo "export GOG_KEYRING_PASSWORD=$(openssl rand -hex 32)" >> .openclaw/.env
 One-time GCP setup: APIs, Artifact Registry, VM, Cloud NAT, IAP firewall, init-vm.
 
 ### `./scripts/init-vm.sh` - VM Initialization
-Runs on VM: installs Docker + git, creates directories, initializes .openclaw git repo + bare repo, sets up systemd service.
+Runs on VM: installs Docker + git, creates directories, initializes .openclaw git repo + bare repo, configures Docker auth.
 
 ### `./scripts/build.sh` - Build Images
 - Default: builds for linux/amd64 + pushes to Artifact Registry
@@ -201,7 +200,7 @@ Runs on VM: installs Docker + git, creates directories, initializes .openclaw gi
 ./scripts/openclaw.sh shell         # Bash in container
 ./scripts/openclaw.sh logs          # Stream logs
 ./scripts/openclaw.sh cli CMD       # Run CLI commands
-./scripts/openclaw.sh status        # Systemd status
+./scripts/openclaw.sh status        # Container status
 ./scripts/openclaw.sh ps            # Container status
 ./scripts/openclaw.sh restart       # Restart container
 ./scripts/openclaw.sh sync push     # Push .openclaw to VM
@@ -226,9 +225,6 @@ Runs on VM: installs Docker + git, creates directories, initializes .openclaw gi
 ./scripts/backup.sh restore  # Restore from GCS
 ./scripts/backup.sh list     # List backups
 ```
-
-### `./scripts/vm-git-init.sh` - VM Git Migration
-One-time script to migrate existing VM from old layout (`.openclaw` in home dir) to new git-based layout (`.openclaw` in `~/openclaw/`). Run `backup.sh backup` first!
 
 ### `./scripts/gog-auth-local.sh` - gogcli Authentication
 Runs OAuth flow locally, saves credentials to `.openclaw/.config/gogcli/`.
@@ -279,7 +275,6 @@ Runs OAuth flow locally, saves credentials to `.openclaw/.config/gogcli/`.
 - Gateway binds to localhost on VM
 - Token-based authentication
 - Non-root container user (`node`)
-- Systemd hardening (NoNewPrivileges, ProtectSystem)
 - Secrets in private git repo (never pushed to GitHub)
 - .openclaw/.env contains sensitive data, synced only via SSH/IAP
 

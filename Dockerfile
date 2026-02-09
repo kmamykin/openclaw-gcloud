@@ -51,12 +51,4 @@ RUN mkdir -p ~/.config && \
 # Copy bash configuration
 COPY scripts/docker/.bashrc /home/node/.bashrc
 
-# Create SSH config for GitHub
-RUN mkdir -p ~/.ssh && \
-    echo "Host github.com" > ~/.ssh/config && \
-    echo "  Hostname github.com" >> ~/.ssh/config && \
-    echo "  IdentityFile ~/.openclaw/ssh/github_rsa" >> ~/.ssh/config && \
-    echo "  User git" >> ~/.ssh/config && \
-    chmod 600 ~/.ssh/config
-
 # Inherit CMD from base image: node dist/index.js

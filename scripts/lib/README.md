@@ -8,7 +8,6 @@ Reusable utilities for OpenClaw GCP deployment scripts.
 Path and directory resolution utilities.
 
 **Functions:**
-- `get_script_dir()` - Returns the directory of the calling script
 - `get_project_root()` - Returns the project root directory (parent of scripts/)
 
 **Example:**
@@ -22,8 +21,7 @@ cd "$PROJECT_ROOT"
 Environment variable loading utilities.
 
 **Functions:**
-- `load_env()` - Load .env file with basic variable export
-- `load_env_expanded()` - Load .env with ${VAR} expansion (for setup.sh)
+- `load_env()` - Load .env file with basic variable export (sources both .env files)
 
 **Example:**
 ```bash

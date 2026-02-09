@@ -2,7 +2,7 @@
 set -e
 
 # OpenClaw VM Initialization Script
-# Runs on the VM to set up Docker, OpenClaw directories, and systemd service
+# Runs on the VM to set up Docker, OpenClaw directories, and git-based sync
 
 echo "Starting VM initialization..."
 
@@ -61,12 +61,28 @@ if ! docker compose version &> /dev/null; then
     exit 1
 fi
 
+# Configure Docker userns-remap so container's node user (UID 1000) maps to host VM user
+echo "Configuring Docker userns-remap..."
+HOST_UID=$(id -u "$GCP_VM_USER")
+HOST_GID=$(id -g "$GCP_VM_USER")
+SUBID_START=$((HOST_UID - 1000))
+SUBGID_START=$((HOST_GID - 1000))
+
+# Create dockremap user if needed
+if ! id dockremap &>/dev/null; then
+    sudo useradd -r -s /usr/sbin/nologin dockremap
+fi
+
+# Configure subordinate UID/GID ranges
+echo "dockremap:${SUBID_START}:65536" | sudo tee /etc/subuid
+echo "dockremap:${SUBGID_START}:65536" | sudo tee /etc/subgid
+
 # Configure Docker daemon
 echo "Configuring Docker daemon..."
 sudo mkdir -p /etc/docker
 cat <<EOF | sudo tee /etc/docker/daemon.json
 {
-  "live-restore": true,
+  "userns-remap": "default",
   "log-driver": "json-file",
   "log-opts": {
     "max-size": "10m",
@@ -142,6 +158,7 @@ HOOKEOF
 "
 
 # Configure Docker authentication to Artifact Registry
+REGISTRY_HOST="${GCP_REGION}-docker.pkg.dev"
 echo "Configuring Docker authentication to Artifact Registry..."
 gcloud auth configure-docker "${REGISTRY_HOST}" --quiet
 
@@ -158,41 +175,6 @@ services:
     restart: "no"
 EOF
 
-# Create systemd service
-echo "Creating systemd service..."
-cat <<EOF | sudo tee /etc/systemd/system/openclaw-gateway.service
-[Unit]
-Description=OpenClaw Gateway
-After=docker.service
-Requires=docker.service
-
-[Service]
-Type=simple
-User=$GCP_VM_USER
-WorkingDirectory=/home/$GCP_VM_USER/openclaw
-ExecStart=/usr/bin/docker compose up
-ExecStop=/usr/bin/docker compose down
-Restart=always
-RestartSec=10
-
-# Security hardening
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectSystem=strict
-ProtectHome=read-only
-ReadWritePaths=/home/$GCP_VM_USER/openclaw/.openclaw
-ReadWritePaths=/home/$GCP_VM_USER/openclaw/.openclaw.git
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# Reload systemd
-sudo systemctl daemon-reload
-
-# Enable service (but don't start yet - will be started by deploy.sh)
-sudo systemctl enable openclaw-gateway
-
 echo ""
 echo "=========================================="
 echo "VM initialization complete!"
@@ -204,7 +186,6 @@ echo "- User '$GCP_VM_USER' created"
 echo "- OpenClaw directories created (new layout)"
 echo "- .openclaw git repo initialized"
 echo "- Bare repo + post-receive hook set up"
-echo "- Systemd service configured"
 echo "- Docker authenticated to Artifact Registry"
 echo ""
 echo "Next steps:"

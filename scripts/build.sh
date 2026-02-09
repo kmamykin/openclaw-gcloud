@@ -28,9 +28,11 @@ if [ "$1" = "--local" ] || [ "$1" = "-l" ]; then
     LOCAL_BUILD=1
 fi
 
-# For remote builds, validate registry vars
+# For remote builds, compute registry path and validate
 if [ $LOCAL_BUILD -eq 0 ]; then
-    require_vars GCP_PROJECT_ID REGISTRY || exit 1
+    require_vars GCP_PROJECT_ID GCP_REGION GCP_REPO_NAME || exit 1
+    REGISTRY_HOST="${GCP_REGION}-docker.pkg.dev"
+    REGISTRY="${REGISTRY_HOST}/${GCP_PROJECT_ID}/${GCP_REPO_NAME}"
 fi
 
 # Check if openclaw directory exists

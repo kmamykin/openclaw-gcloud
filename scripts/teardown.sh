@@ -15,8 +15,8 @@ source "${SCRIPT_DIR}/lib/validation.sh"
 PROJECT_ROOT="$(get_project_root)"
 cd "$PROJECT_ROOT"
 
-# Load environment with variable expansion
-load_env_expanded || exit 1
+# Load environment
+load_env || exit 1
 
 # Validate required variables
 if ! require_vars GCP_PROJECT_ID; then

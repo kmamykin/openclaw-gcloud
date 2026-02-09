@@ -20,7 +20,11 @@ cd "$PROJECT_ROOT"
 load_env || exit 1
 
 # Validate required variables
-require_vars VM_NAME GCP_ZONE || exit 1
+require_vars VM_NAME GCP_ZONE GCP_REGION GCP_PROJECT_ID GCP_REPO_NAME || exit 1
+
+# Compute registry path (derived from base vars)
+export REGISTRY_HOST="${GCP_REGION}-docker.pkg.dev"
+export REGISTRY="${REGISTRY_HOST}/${GCP_PROJECT_ID}/${GCP_REPO_NAME}"
 
 # Parse arguments
 BUILD_FIRST=0
