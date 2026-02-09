@@ -26,7 +26,7 @@ openclaw-gcloud/
 │   ├── workspace/              # Separate git repo (GitHub remote)
 │   ├── sessions/               # Ephemeral (gitignored)
 │   └── .gitignore
-├── openclaw/                   # Official OpenClaw repository (gitignored)
+├── openclaw/                   # Official OpenClaw repository (optional, gitignored)
 └── scripts/
     ├── setup.sh                # One-time GCP infrastructure setup
     ├── init-vm.sh              # One-time VM initialization
@@ -85,14 +85,14 @@ Both modes use identical Docker images and mount `.openclaw/` the same way.
 
 ### Docker Image Strategy
 
-**Two-Image Build Process**:
+**Base + Cloud Extension**:
 
-1. **openclaw:latest** (Base Image) - Built from official OpenClaw repository at `./openclaw`
+1. **ghcr.io/openclaw/openclaw** (Base Image) - Pre-built official image pulled from GitHub Container Registry. Version controlled via `OPENCLAW_VERSION` in `.env` (defaults to `latest`).
 2. **openclaw-cloud:latest** (Cloud-Extended Image) - Extends base with gog CLI, gh CLI, uv, ffmpeg, vim, Gemini CLI
 
 **Multi-arch support**:
-- `./scripts/build.sh` - Builds for linux/amd64 (VM) and pushes to registry
-- `./scripts/build.sh --local` - Builds for native platform (arm64 on Mac), no push
+- `./scripts/build.sh` - Pulls base image, builds cloud image for linux/amd64, pushes to registry
+- `./scripts/build.sh --local` - Pulls base image, builds cloud image for native platform (arm64 on Mac), no push
 
 ### Infrastructure Components
 
@@ -184,9 +184,10 @@ One-time GCP setup: APIs, Artifact Registry, VM, Cloud NAT, IAP firewall, init-v
 ### `./scripts/init-vm.sh` - VM Initialization
 Runs on VM: installs Docker + git, creates directories, initializes .openclaw git repo + bare repo, configures Docker auth.
 
-### `./scripts/build.sh` - Build Images
-- Default: builds for linux/amd64 + pushes to Artifact Registry
-- `--local`: builds for native platform (arm64 on Mac), no push
+### `./scripts/build.sh` - Build Cloud Image
+- Pulls pre-built base image from ghcr.io/openclaw/openclaw (version from `OPENCLAW_VERSION`)
+- Default: builds cloud image for linux/amd64 + pushes to Artifact Registry
+- `--local`: builds cloud image for native platform (arm64 on Mac), no push
 
 ### `./scripts/deploy.sh` - Deploy to VM
 - `--build`: build images first

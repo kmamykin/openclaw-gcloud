@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-# Build and push OpenClaw Docker images
-# Builds both base openclaw and cloud-extended images
+# Build and push OpenClaw cloud-extended Docker image
+# Uses pre-built base image from ghcr.io/openclaw/openclaw
 #
 # Usage:
 #   ./scripts/build.sh          # Build for amd64 (VM) + push to registry
@@ -35,34 +35,30 @@ if [ $LOCAL_BUILD -eq 0 ]; then
     REGISTRY="${REGISTRY_HOST}/${GCP_PROJECT_ID}/${GCP_REPO_NAME}"
 fi
 
-# Check if openclaw directory exists
-if [ ! -d "openclaw" ]; then
-    echo "ERROR: openclaw directory not found"
-    echo "Please clone the OpenClaw repository:"
-    echo "  git clone https://github.com/openclaw/openclaw.git"
-    exit 1
-fi
+# Compute base image from OPENCLAW_VERSION
+OPENCLAW_VERSION="${OPENCLAW_VERSION:-latest}"
+BASE_IMAGE="ghcr.io/openclaw/openclaw:${OPENCLAW_VERSION}"
 
 if [ $LOCAL_BUILD -eq 1 ]; then
     echo ""
     echo "=========================================="
-    echo "Building OpenClaw Docker Images (local)"
+    echo "Building OpenClaw Cloud Image (local)"
     echo "=========================================="
-    echo "Platform: native ($(uname -m))"
+    echo "Base image:  ${BASE_IMAGE}"
+    echo "Platform:    native ($(uname -m))"
     echo "=========================================="
     echo ""
 
-    # Build base image for native platform
-    echo "Building base image: openclaw:latest..."
-    cd openclaw
-    docker buildx build --load -t openclaw:latest .
-    cd ..
-    echo "Base image built"
+    # Pull base image (ensures latest for :latest tag)
+    echo "Pulling base image: ${BASE_IMAGE}..."
+    docker pull "${BASE_IMAGE}"
+    echo ""
 
     # Build cloud-extended image
-    echo ""
     echo "Building cloud image: openclaw-cloud:latest..."
-    docker buildx build --load -f Dockerfile -t openclaw-cloud:latest .
+    docker buildx build --load \
+        --build-arg BASE_IMAGE="${BASE_IMAGE}" \
+        -f Dockerfile -t openclaw-cloud:latest .
     echo "Cloud image built"
 
     echo ""
@@ -70,9 +66,7 @@ if [ $LOCAL_BUILD -eq 1 ]; then
     echo "Local build complete!"
     echo "=========================================="
     echo ""
-    echo "Images:"
-    echo "  openclaw:latest"
-    echo "  openclaw-cloud:latest"
+    echo "Image: openclaw-cloud:latest"
     echo ""
     echo "Next steps:"
     echo "  Run locally: ./scripts/local.sh start"
@@ -83,55 +77,37 @@ else
 
     echo ""
     echo "=========================================="
-    echo "Building OpenClaw Docker Images"
+    echo "Building OpenClaw Cloud Image"
     echo "=========================================="
-    echo "Base image:  openclaw:latest"
+    echo "Base image:  ${BASE_IMAGE}"
     echo "Cloud image: openclaw-cloud:latest"
     echo "Registry:    $REGISTRY"
     echo "Tag:         $IMAGE_TAG"
     echo "=========================================="
     echo ""
 
-    # Build base image for linux/amd64 (GCP VM platform)
-    echo "Building base image: openclaw:latest (for linux/amd64)..."
-    cd openclaw
-    docker buildx build --platform linux/amd64 --load -t openclaw:latest .
-    cd ..
-    echo "Base image built"
+    # Pull base image (ensures latest for :latest tag)
+    echo "Pulling base image: ${BASE_IMAGE}..."
+    docker pull --platform linux/amd64 "${BASE_IMAGE}"
+    echo ""
 
     # Build cloud-extended image
-    echo ""
     echo "Building cloud image: openclaw-cloud:latest (for linux/amd64)..."
-    docker buildx build --platform linux/amd64 --load -f Dockerfile -t openclaw-cloud:latest .
+    docker buildx build --platform linux/amd64 --load \
+        --build-arg BASE_IMAGE="${BASE_IMAGE}" \
+        -f Dockerfile -t openclaw-cloud:latest .
     echo "Cloud image built"
 
-    # Tag images
-    echo ""
-
-    # Tag base image
-    docker tag openclaw:latest "${REGISTRY}/${IMAGE_NAME_BASE}:${IMAGE_TAG}"
-    docker tag openclaw:latest "${REGISTRY}/${IMAGE_NAME_BASE}:latest"
-    echo "Tagged: ${REGISTRY}/${IMAGE_NAME_BASE}:${IMAGE_TAG}"
-    echo "Tagged: ${REGISTRY}/${IMAGE_NAME_BASE}:latest"
-
     # Tag cloud image
+    echo ""
     docker tag openclaw-cloud:latest "${REGISTRY}/${IMAGE_NAME_CLOUD}:${IMAGE_TAG}"
     docker tag openclaw-cloud:latest "${REGISTRY}/${IMAGE_NAME_CLOUD}:latest"
     echo "Tagged: ${REGISTRY}/${IMAGE_NAME_CLOUD}:${IMAGE_TAG}"
     echo "Tagged: ${REGISTRY}/${IMAGE_NAME_CLOUD}:latest"
 
-    # Push images
-    echo ""
-    echo "Pushing images to Artifact Registry..."
-    echo "This may take a few minutes..."
-    echo ""
-
-    # Push base image
-    docker push "${REGISTRY}/${IMAGE_NAME_BASE}:${IMAGE_TAG}"
-    docker push "${REGISTRY}/${IMAGE_NAME_BASE}:latest"
-    echo "Pushed base image"
-
     # Push cloud image
+    echo ""
+    echo "Pushing image to Artifact Registry..."
     echo ""
     docker push "${REGISTRY}/${IMAGE_NAME_CLOUD}:${IMAGE_TAG}"
     docker push "${REGISTRY}/${IMAGE_NAME_CLOUD}:latest"
@@ -143,8 +119,6 @@ else
     echo "=========================================="
     echo ""
     echo "Images pushed:"
-    echo "  ${REGISTRY}/${IMAGE_NAME_BASE}:${IMAGE_TAG}"
-    echo "  ${REGISTRY}/${IMAGE_NAME_BASE}:latest"
     echo "  ${REGISTRY}/${IMAGE_NAME_CLOUD}:${IMAGE_TAG}"
     echo "  ${REGISTRY}/${IMAGE_NAME_CLOUD}:latest"
     echo ""
