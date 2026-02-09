@@ -4,7 +4,9 @@ services:
     container_name: openclaw-gateway
     restart: unless-stopped
     network_mode: "host"
-    env_file: .env
+    env_file:
+      - .env
+      - .openclaw/.env
     environment:
       - HOME=/home/node
       - TERM=xterm-256color
@@ -17,9 +19,7 @@ services:
       - GOG_KEYRING_BACKEND=${GOG_KEYRING_BACKEND}
       - GOG_KEYRING_PASSWORD=${GOG_KEYRING_PASSWORD}
     volumes:
-      - /home/${GCP_VM_USER}/.openclaw:/home/node/.openclaw
-      - /home/${GCP_VM_USER}/.openclaw/workspace:/home/node/.openclaw/workspace
-      - /home/${GCP_VM_USER}/.config/gogcli:/home/node/.config/gogcli
+      - /home/${GCP_VM_USER}/openclaw/.openclaw:/home/node/.openclaw
     deploy:
       resources:
         limits:
@@ -45,6 +45,9 @@ services:
   openclaw-cli:
     image: ${REGISTRY}/openclaw-cloud:latest
     container_name: openclaw-cli
+    env_file:
+      - .env
+      - .openclaw/.env
     environment:
       - HOME=/home/node
       - TERM=xterm-256color
@@ -55,9 +58,7 @@ services:
       - GOG_KEYRING_BACKEND=${GOG_KEYRING_BACKEND}
       - GOG_KEYRING_PASSWORD=${GOG_KEYRING_PASSWORD}
     volumes:
-      - /home/${GCP_VM_USER}/.openclaw:/home/node/.openclaw
-      - /home/${GCP_VM_USER}/.openclaw/workspace:/home/node/.openclaw/workspace
-      - /home/${GCP_VM_USER}/.config/gogcli:/home/node/.config/gogcli
+      - /home/${GCP_VM_USER}/openclaw/.openclaw:/home/node/.openclaw
     stdin_open: true
     tty: true
     init: true

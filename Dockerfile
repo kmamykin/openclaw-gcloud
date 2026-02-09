@@ -43,8 +43,10 @@ RUN npm install -g @google/gemini-cli
 # Switch back to non-root user
 USER node
 
-# Create placeholder for gogcli credentials (mounted as volume)
-RUN mkdir -p ~/.config/gogcli
+# Symlink gogcli config so gog CLI finds creds at its expected ~/.config/gogcli path
+# Actual creds live in ~/.openclaw/.config/gogcli (mounted as volume)
+RUN mkdir -p ~/.config && \
+    ln -sf /home/node/.openclaw/.config/gogcli /home/node/.config/gogcli
 
 # Copy bash configuration
 COPY scripts/docker/.bashrc /home/node/.bashrc

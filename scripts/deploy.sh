@@ -10,6 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/path.sh"
 source "${SCRIPT_DIR}/lib/env.sh"
 source "${SCRIPT_DIR}/lib/validation.sh"
+source "${SCRIPT_DIR}/lib/ssh-setup.sh"
 
 # Get project root and change to it
 PROJECT_ROOT="$(get_project_root)"
@@ -23,9 +24,13 @@ require_vars VM_NAME GCP_ZONE || exit 1
 
 # Parse arguments
 BUILD_FIRST=0
-if [ "$1" = "--build" ] || [ "$1" = "-b" ]; then
-    BUILD_FIRST=1
-fi
+SKIP_SYNC=0
+for arg in "$@"; do
+    case "$arg" in
+        --build|-b) BUILD_FIRST=1 ;;
+        --no-sync) SKIP_SYNC=1 ;;
+    esac
+done
 
 # Optionally build new images
 if [ $BUILD_FIRST -eq 1 ]; then
@@ -34,13 +39,11 @@ if [ $BUILD_FIRST -eq 1 ]; then
     echo ""
 fi
 
-# Check if local credentials exist and prompt to sync
-if [ -d "${PROJECT_ROOT}/.config/gogcli" ] && [ -n "$(ls -A "${PROJECT_ROOT}/.config/gogcli" 2>/dev/null)" ]; then
-    echo "Local gogcli credentials detected"
-    read -p "Sync credentials to VM? [Y/n] " -r
-    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-        "${SCRIPT_DIR}/openclaw.sh" gog-sync
-    fi
+# Sync .openclaw changes to VM before deploy
+if [ $SKIP_SYNC -eq 0 ] && [ -d .openclaw/.git ]; then
+    echo "Syncing .openclaw to VM..."
+    ensure_ssh_config
+    "${SCRIPT_DIR}/openclaw.sh" sync push
     echo ""
 fi
 
@@ -68,7 +71,7 @@ gcloud compute scp .env "${VM_NAME}:/home/${GCP_VM_USER}/openclaw/.env" \
     --zone="$GCP_ZONE" \
     --tunnel-through-iap
 
-echo "✓ Files copied"
+echo "Files copied"
 
 # Deploy on VM
 echo ""
@@ -80,9 +83,10 @@ set -e
 
 cd /home/${GCP_VM_USER}/openclaw
 
-# Source .env
+# Source both env files
 set -a
 source .env
+[ -f .openclaw/.env ] && source .openclaw/.env
 set +a
 
 docker compose pull openclaw-gateway
@@ -103,9 +107,6 @@ fi
 
 echo ""
 echo "Container started successfully"
-echo ""
-echo "Note: Gateway started with --allow-unconfigured flag."
-echo "You can configure it by accessing the UI and running the onboarding wizard."
 EOFSCRIPT
 )
 
@@ -133,11 +134,8 @@ echo ""
 echo "  2. Visit in browser:"
 echo "     http://localhost:${OPENCLAW_GATEWAY_PORT}"
 echo ""
-echo "  3. Authenticate with token from .env"
+echo "  3. Authenticate with token from .openclaw/.env"
 echo ""
 echo "View logs:"
 echo "  ./scripts/openclaw.sh logs"
-echo ""
-echo "Run CLI commands:"
-echo "  ./scripts/openclaw.sh cli gateway status"
 echo ""

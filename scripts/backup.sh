@@ -29,7 +29,7 @@ case "$ACTION" in
         echo "Backing up OpenClaw data to GCS"
         echo "=========================================="
         echo ""
-        echo "Source: VM:~/.openclaw"
+        echo "Source: VM:~/openclaw/.openclaw"
         echo "Destination: gs://$GCS_BUCKET_NAME/openclaw-backup/"
         echo ""
 
@@ -41,6 +41,7 @@ set -e
 cd /home/${GCP_VM_USER}/openclaw
 set -a
 source .env
+[ -f .openclaw/.env ] && source .openclaw/.env
 set +a
 
 BACKUP_DATE=$(date +%Y%m%d-%H%M%S)
@@ -48,8 +49,8 @@ BACKUP_PATH="gs://${GCS_BUCKET_NAME}/openclaw-backup/${BACKUP_DATE}"
 
 echo "Backing up to: $BACKUP_PATH"
 
-# Create a compressed archive
-cd /home/${GCP_VM_USER}
+# Create a compressed archive from the new location
+cd /home/${GCP_VM_USER}/openclaw
 tar czf /tmp/openclaw-backup.tar.gz .openclaw/
 
 gsutil cp /tmp/openclaw-backup.tar.gz "$BACKUP_PATH/openclaw-data.tar.gz"
@@ -60,7 +61,7 @@ gsutil cp /tmp/openclaw-backup.tar.gz "gs://${GCS_BUCKET_NAME}/openclaw-backup/l
 # Cleanup
 rm /tmp/openclaw-backup.tar.gz
 
-echo "✓ Backup complete"
+echo "Backup complete"
 echo ""
 echo "Backup location:"
 echo "  $BACKUP_PATH/openclaw-data.tar.gz"
@@ -87,7 +88,7 @@ EOFSCRIPT
         echo "=========================================="
         echo ""
         echo "Source: gs://$GCS_BUCKET_NAME/openclaw-backup/latest.tar.gz"
-        echo "Destination: VM:~/.openclaw"
+        echo "Destination: VM:~/openclaw/.openclaw"
         echo ""
 
         # Confirm restoration
@@ -106,6 +107,7 @@ set -e
 cd /home/${GCP_VM_USER}/openclaw
 set -a
 source .env
+[ -f .openclaw/.env ] && source .openclaw/.env
 set +a
 
 echo "Stopping OpenClaw gateway..."
@@ -114,22 +116,21 @@ docker compose stop openclaw-gateway || true
 echo "Downloading backup from GCS..."
 gsutil cp "gs://${GCS_BUCKET_NAME}/openclaw-backup/latest.tar.gz" /tmp/openclaw-backup.tar.gz
 
-if [ -d "/home/${GCP_VM_USER}/.openclaw" ]; then
-    mv "/home/${GCP_VM_USER}/.openclaw" "/home/${GCP_VM_USER}/.openclaw.pre-restore-$(date +%Y%m%d-%H%M%S)"
+if [ -d "/home/${GCP_VM_USER}/openclaw/.openclaw" ]; then
+    mv "/home/${GCP_VM_USER}/openclaw/.openclaw" "/home/${GCP_VM_USER}/openclaw/.openclaw.pre-restore-$(date +%Y%m%d-%H%M%S)"
 fi
 
 echo "Extracting backup..."
-cd /home/${GCP_VM_USER}
+cd /home/${GCP_VM_USER}/openclaw
 tar xzf /tmp/openclaw-backup.tar.gz
 
 # Cleanup
 rm /tmp/openclaw-backup.tar.gz
 
 echo "Starting OpenClaw gateway..."
-cd /home/${GCP_VM_USER}/openclaw
 docker compose start openclaw-gateway
 
-echo "✓ Restore complete"
+echo "Restore complete"
 EOFSCRIPT
 )
 
@@ -144,7 +145,7 @@ EOFSCRIPT
         echo "Restore complete!"
         echo "=========================================="
         echo ""
-        echo "Previous data backed up to: ~/.openclaw.pre-restore-*"
+        echo "Previous data backed up to: ~/openclaw/.openclaw.pre-restore-*"
         echo ""
         ;;
 

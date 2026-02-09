@@ -3,7 +3,10 @@
 .env
 client_secret_*.json
 
-# gogcli authentication files (contain OAuth tokens)
+# .openclaw is a separate git repo (synced via git, not tracked by parent)
+/.openclaw/
+
+# gogcli authentication files (now in .openclaw/.config/gogcli/)
 /.config/
 /Library/
 /.gog-temp/

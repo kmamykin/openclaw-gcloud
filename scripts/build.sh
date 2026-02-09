@@ -3,6 +3,10 @@ set -e
 
 # Build and push OpenClaw Docker images
 # Builds both base openclaw and cloud-extended images
+#
+# Usage:
+#   ./scripts/build.sh          # Build for amd64 (VM) + push to registry
+#   ./scripts/build.sh --local  # Build for native platform (arm64 on Mac), no push
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -18,8 +22,16 @@ cd "$PROJECT_ROOT"
 # Load environment
 load_env || exit 1
 
-# Validate required variables
-require_vars GCP_PROJECT_ID REGISTRY || exit 1
+# Parse arguments
+LOCAL_BUILD=0
+if [ "$1" = "--local" ] || [ "$1" = "-l" ]; then
+    LOCAL_BUILD=1
+fi
+
+# For remote builds, validate registry vars
+if [ $LOCAL_BUILD -eq 0 ]; then
+    require_vars GCP_PROJECT_ID REGISTRY || exit 1
+fi
 
 # Check if openclaw directory exists
 if [ ! -d "openclaw" ]; then
@@ -29,76 +41,112 @@ if [ ! -d "openclaw" ]; then
     exit 1
 fi
 
-# Generate image tag
-IMAGE_TAG=$(date +%Y%m%d-%H%M%S)
+if [ $LOCAL_BUILD -eq 1 ]; then
+    echo ""
+    echo "=========================================="
+    echo "Building OpenClaw Docker Images (local)"
+    echo "=========================================="
+    echo "Platform: native ($(uname -m))"
+    echo "=========================================="
+    echo ""
 
-echo ""
-echo "=========================================="
-echo "Building OpenClaw Docker Images"
-echo "=========================================="
-echo "Base image:  openclaw:latest"
-echo "Cloud image: openclaw-cloud:latest"
-echo "Registry:    $REGISTRY"
-echo "Tag:         $IMAGE_TAG"
-echo "=========================================="
-echo ""
+    # Build base image for native platform
+    echo "Building base image: openclaw:latest..."
+    cd openclaw
+    docker buildx build --load -t openclaw:latest .
+    cd ..
+    echo "Base image built"
 
-# Build base image for linux/amd64 (GCP VM platform)
-echo "Building base image: openclaw:latest (for linux/amd64)..."
-cd openclaw
-docker buildx build --platform linux/amd64 --load -t openclaw:latest .
-cd ..
-echo "✓ Base image built"
+    # Build cloud-extended image
+    echo ""
+    echo "Building cloud image: openclaw-cloud:latest..."
+    docker buildx build --load -f Dockerfile -t openclaw-cloud:latest .
+    echo "Cloud image built"
 
-# Build cloud-extended image
-echo ""
-echo "Building cloud image: openclaw-cloud:latest (for linux/amd64)..."
-docker buildx build --platform linux/amd64 --load -f Dockerfile -t openclaw-cloud:latest .
-echo "✓ Cloud image built"
+    echo ""
+    echo "=========================================="
+    echo "Local build complete!"
+    echo "=========================================="
+    echo ""
+    echo "Images:"
+    echo "  openclaw:latest"
+    echo "  openclaw-cloud:latest"
+    echo ""
+    echo "Next steps:"
+    echo "  Run locally: ./scripts/local.sh start"
+    echo ""
+else
+    # Generate image tag
+    IMAGE_TAG=$(date +%Y%m%d-%H%M%S)
 
-# Tag images
-echo ""
+    echo ""
+    echo "=========================================="
+    echo "Building OpenClaw Docker Images"
+    echo "=========================================="
+    echo "Base image:  openclaw:latest"
+    echo "Cloud image: openclaw-cloud:latest"
+    echo "Registry:    $REGISTRY"
+    echo "Tag:         $IMAGE_TAG"
+    echo "=========================================="
+    echo ""
 
-# Tag base image
-docker tag openclaw:latest "${REGISTRY}/${IMAGE_NAME_BASE}:${IMAGE_TAG}"
-docker tag openclaw:latest "${REGISTRY}/${IMAGE_NAME_BASE}:latest"
-echo "✓ Tagged: ${REGISTRY}/${IMAGE_NAME_BASE}:${IMAGE_TAG}"
-echo "✓ Tagged: ${REGISTRY}/${IMAGE_NAME_BASE}:latest"
+    # Build base image for linux/amd64 (GCP VM platform)
+    echo "Building base image: openclaw:latest (for linux/amd64)..."
+    cd openclaw
+    docker buildx build --platform linux/amd64 --load -t openclaw:latest .
+    cd ..
+    echo "Base image built"
 
-# Tag cloud image
-docker tag openclaw-cloud:latest "${REGISTRY}/${IMAGE_NAME_CLOUD}:${IMAGE_TAG}"
-docker tag openclaw-cloud:latest "${REGISTRY}/${IMAGE_NAME_CLOUD}:latest"
-echo "✓ Tagged: ${REGISTRY}/${IMAGE_NAME_CLOUD}:${IMAGE_TAG}"
-echo "✓ Tagged: ${REGISTRY}/${IMAGE_NAME_CLOUD}:latest"
+    # Build cloud-extended image
+    echo ""
+    echo "Building cloud image: openclaw-cloud:latest (for linux/amd64)..."
+    docker buildx build --platform linux/amd64 --load -f Dockerfile -t openclaw-cloud:latest .
+    echo "Cloud image built"
 
-# Push images
-echo ""
-echo "Pushing images to Artifact Registry..."
-echo "This may take a few minutes..."
-echo ""
+    # Tag images
+    echo ""
 
-# Push base image
-docker push "${REGISTRY}/${IMAGE_NAME_BASE}:${IMAGE_TAG}"
-docker push "${REGISTRY}/${IMAGE_NAME_BASE}:latest"
-echo "✓ Pushed base image"
+    # Tag base image
+    docker tag openclaw:latest "${REGISTRY}/${IMAGE_NAME_BASE}:${IMAGE_TAG}"
+    docker tag openclaw:latest "${REGISTRY}/${IMAGE_NAME_BASE}:latest"
+    echo "Tagged: ${REGISTRY}/${IMAGE_NAME_BASE}:${IMAGE_TAG}"
+    echo "Tagged: ${REGISTRY}/${IMAGE_NAME_BASE}:latest"
 
-# Push cloud image
-echo ""
-docker push "${REGISTRY}/${IMAGE_NAME_CLOUD}:${IMAGE_TAG}"
-docker push "${REGISTRY}/${IMAGE_NAME_CLOUD}:latest"
-echo "✓ Pushed cloud image"
+    # Tag cloud image
+    docker tag openclaw-cloud:latest "${REGISTRY}/${IMAGE_NAME_CLOUD}:${IMAGE_TAG}"
+    docker tag openclaw-cloud:latest "${REGISTRY}/${IMAGE_NAME_CLOUD}:latest"
+    echo "Tagged: ${REGISTRY}/${IMAGE_NAME_CLOUD}:${IMAGE_TAG}"
+    echo "Tagged: ${REGISTRY}/${IMAGE_NAME_CLOUD}:latest"
 
-echo ""
-echo "=========================================="
-echo "Build complete!"
-echo "=========================================="
-echo ""
-echo "Images pushed:"
-echo "  ${REGISTRY}/${IMAGE_NAME_BASE}:${IMAGE_TAG}"
-echo "  ${REGISTRY}/${IMAGE_NAME_BASE}:latest"
-echo "  ${REGISTRY}/${IMAGE_NAME_CLOUD}:${IMAGE_TAG}"
-echo "  ${REGISTRY}/${IMAGE_NAME_CLOUD}:latest"
-echo ""
-echo "Next steps:"
-echo "  Deploy to VM: ./scripts/deploy.sh"
-echo ""
+    # Push images
+    echo ""
+    echo "Pushing images to Artifact Registry..."
+    echo "This may take a few minutes..."
+    echo ""
+
+    # Push base image
+    docker push "${REGISTRY}/${IMAGE_NAME_BASE}:${IMAGE_TAG}"
+    docker push "${REGISTRY}/${IMAGE_NAME_BASE}:latest"
+    echo "Pushed base image"
+
+    # Push cloud image
+    echo ""
+    docker push "${REGISTRY}/${IMAGE_NAME_CLOUD}:${IMAGE_TAG}"
+    docker push "${REGISTRY}/${IMAGE_NAME_CLOUD}:latest"
+    echo "Pushed cloud image"
+
+    echo ""
+    echo "=========================================="
+    echo "Build complete!"
+    echo "=========================================="
+    echo ""
+    echo "Images pushed:"
+    echo "  ${REGISTRY}/${IMAGE_NAME_BASE}:${IMAGE_TAG}"
+    echo "  ${REGISTRY}/${IMAGE_NAME_BASE}:latest"
+    echo "  ${REGISTRY}/${IMAGE_NAME_CLOUD}:${IMAGE_TAG}"
+    echo "  ${REGISTRY}/${IMAGE_NAME_CLOUD}:latest"
+    echo ""
+    echo "Next steps:"
+    echo "  Deploy to VM: ./scripts/deploy.sh"
+    echo ""
+fi

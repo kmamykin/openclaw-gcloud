@@ -1,7 +1,7 @@
 #!/bin/bash
 # Environment variable loading utilities
 
-# Load .env file from current directory
+# Load .env file from project root
 # Usage: load_env || { echo "ERROR: Failed to load .env" >&2; exit 1; }
 load_env() {
     if [ ! -f .env ]; then
@@ -13,6 +13,14 @@ load_env() {
     set -a
     source .env
     set +a
+
+    # Also source .openclaw/.env if it exists
+    if [ -f .openclaw/.env ]; then
+        set -a
+        source .openclaw/.env
+        set +a
+    fi
+
     return 0
 }
 
@@ -30,5 +38,13 @@ load_env_expanded() {
     set -a
     eval "$(cat .env | grep -v '^#' | sed 's/\${GCP_REGION}/'$GCP_REGION'/g' | sed 's/\${GCP_PROJECT_ID}/'$GCP_PROJECT_ID'/g' | sed 's/\${GCP_REPO_NAME}/'$GCP_REPO_NAME'/g')"
     set +a
+
+    # Also source .openclaw/.env if it exists
+    if [ -f .openclaw/.env ]; then
+        set -a
+        source .openclaw/.env
+        set +a
+    fi
+
     return 0
 }

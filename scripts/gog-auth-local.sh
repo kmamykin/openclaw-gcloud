@@ -2,7 +2,7 @@
 set -e
 
 # Local gogcli authentication script
-# Runs OAuth flow in local container with browser, saves to .config/gogcli/
+# Runs OAuth flow locally, saves credentials to .openclaw/.config/gogcli/
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -35,7 +35,8 @@ if [ $# -lt 3 ]; then
     echo "  $0 ~/Downloads/work.json work you@company.com --domain company.com"
     echo "  $0 ~/Downloads/personal.json personal you@gmail.com"
     echo ""
-    echo "Named clients allow managing separate OAuth credentials for different projects."
+    echo "Credentials are saved to .openclaw/.config/gogcli/"
+    echo "Then sync to VM with: ./scripts/openclaw.sh sync push"
     echo ""
     exit 1
 fi
@@ -53,10 +54,10 @@ fi
 
 # Validate GOG_KEYRING_PASSWORD is set
 if [ -z "$GOG_KEYRING_PASSWORD" ]; then
-    echo "ERROR: GOG_KEYRING_PASSWORD not set in .env"
+    echo "ERROR: GOG_KEYRING_PASSWORD not set"
     echo ""
-    echo "Generate and add to .env:"
-    echo "  echo \"GOG_KEYRING_PASSWORD=\$(openssl rand -hex 32)\" >> .env"
+    echo "Generate and add to .openclaw/.env:"
+    echo "  echo \"export GOG_KEYRING_PASSWORD=\$(openssl rand -hex 32)\" >> .openclaw/.env"
     echo ""
     exit 1
 fi
@@ -77,8 +78,8 @@ fi
 TEMP_HOME="${PROJECT_ROOT}/.gog-temp"
 mkdir -p "$TEMP_HOME"
 
-# Create .config/gogcli directory (Linux format for VM)
-CONFIG_DIR="${PROJECT_ROOT}/.config/gogcli"
+# Create .config/gogcli directory inside .openclaw (Linux format for VM)
+CONFIG_DIR="${PROJECT_ROOT}/.openclaw/.config/gogcli"
 mkdir -p "$CONFIG_DIR"
 
 echo "=========================================="
@@ -99,7 +100,7 @@ export GOG_KEYRING_BACKEND=file
 export HOME="${TEMP_HOME}"  # Temporary HOME for gog
 
 # Step 1: Set up OAuth credentials
-echo "→ Configuring OAuth credentials..."
+echo "-> Configuring OAuth credentials..."
 GOG_CREDS_CMD="gog --client ${CLIENT_NAME} auth credentials \"${CREDS_FILE}\""
 if [ $# -gt 0 ]; then
     GOG_CREDS_CMD="${GOG_CREDS_CMD} $@"
@@ -107,7 +108,7 @@ fi
 eval "$GOG_CREDS_CMD"
 
 echo ""
-echo "→ Starting OAuth authorization flow..."
+echo "-> Starting OAuth authorization flow..."
 echo "   (Your browser will open shortly)"
 echo ""
 
@@ -115,43 +116,35 @@ echo ""
 gog --client "${CLIENT_NAME}" auth add "${EMAIL}"
 
 echo ""
-echo "→ Converting credentials to Linux format..."
+echo "-> Converting credentials to Linux format..."
 
 # Copy from macOS format to Linux format
 MACOS_GOG_DIR="${TEMP_HOME}/Library/Application Support/gogcli"
 if [ -d "$MACOS_GOG_DIR" ]; then
     cp -r "$MACOS_GOG_DIR"/* "$CONFIG_DIR"/
-    echo "✓ Credentials copied to .config/gogcli/"
+    echo "   Credentials copied to .openclaw/.config/gogcli/"
 else
     echo "ERROR: Credentials not found at expected location"
+    rm -rf "$TEMP_HOME"
     exit 1
 fi
-
-# Create symlink for local testing on macOS
-MACOS_SUPPORT_DIR="${PROJECT_ROOT}/Library/Application Support"
-mkdir -p "$MACOS_SUPPORT_DIR"
-ln -sf "../../.config/gogcli" "${MACOS_SUPPORT_DIR}/gogcli"
-echo "✓ Symlink created for local testing"
 
 # Clean up temp directory
 rm -rf "$TEMP_HOME"
 
 echo ""
-echo "✓ Authentication successful!"
+echo "Authentication successful!"
 echo ""
-echo "Credentials saved to: .config/gogcli/"
-echo "  (This directory is gitignored - credentials stay local)"
+echo "Credentials saved to: .openclaw/.config/gogcli/"
 echo ""
 echo "Next steps:"
 echo ""
-echo "1. Sync credentials to VM:"
-echo "   ./scripts/openclaw.sh gog-sync"
+echo "1. Sync to VM:"
+echo "   ./scripts/openclaw.sh sync push"
 echo ""
-echo "2. Deploy or restart:"
-echo "   ./scripts/deploy.sh"
-echo "   # OR"
-echo "   ./scripts/openclaw.sh restart"
+echo "2. For local Docker testing:"
+echo "   ./scripts/local.sh start"
 echo ""
-echo "3. Test access:"
+echo "3. Test access on VM:"
 echo "   ./scripts/openclaw.sh cli gog --client $CLIENT_NAME gmail labels list"
 echo ""

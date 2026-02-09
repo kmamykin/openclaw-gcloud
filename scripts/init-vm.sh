@@ -47,6 +47,14 @@ else
     echo "Docker installed successfully"
 fi
 
+# Install git if not present
+if ! command -v git &> /dev/null; then
+    echo "Installing git..."
+    sudo apt-get update
+    sudo apt-get install -y git
+    echo "Git installed"
+fi
+
 # Check if Docker Compose is installed
 if ! docker compose version &> /dev/null; then
     echo "ERROR: Docker Compose plugin not installed"
@@ -82,11 +90,13 @@ fi
 # Add user to docker group
 sudo usermod -aG docker "$GCP_VM_USER"
 
-# Create OpenClaw directories
+# Create OpenClaw directories (new layout)
 echo "Creating OpenClaw directories..."
-sudo -u "$GCP_VM_USER" mkdir -p "/home/$GCP_VM_USER/.openclaw"
-sudo -u "$GCP_VM_USER" mkdir -p "/home/$GCP_VM_USER/.openclaw/workspace"
 sudo -u "$GCP_VM_USER" mkdir -p "/home/$GCP_VM_USER/openclaw"
+sudo -u "$GCP_VM_USER" mkdir -p "/home/$GCP_VM_USER/openclaw/.openclaw"
+sudo -u "$GCP_VM_USER" mkdir -p "/home/$GCP_VM_USER/openclaw/.openclaw/workspace"
+sudo -u "$GCP_VM_USER" mkdir -p "/home/$GCP_VM_USER/openclaw/.openclaw/sessions"
+sudo -u "$GCP_VM_USER" mkdir -p "/home/$GCP_VM_USER/openclaw/.openclaw/.config/gogcli"
 
 # Copy .env to user directory
 echo "Copying .env to OpenClaw directory..."
@@ -94,21 +104,54 @@ sudo cp /tmp/.env "/home/$GCP_VM_USER/openclaw/.env"
 sudo chown "$GCP_VM_USER:$GCP_VM_USER" "/home/$GCP_VM_USER/openclaw/.env"
 sudo chmod 600 "/home/$GCP_VM_USER/openclaw/.env"
 
+# Initialize .openclaw as a git repo
+echo "Initializing .openclaw git repo..."
+sudo -u "$GCP_VM_USER" bash -c "
+    cd /home/$GCP_VM_USER/openclaw/.openclaw
+    if [ ! -d .git ]; then
+        # Create .gitignore
+        cat > .gitignore <<'GITEOF'
+workspace/
+sessions/
+GITEOF
+        # Create placeholder .env
+        touch .env
+        git init
+        git add -A
+        git commit -m 'Initial commit'
+    fi
+"
+
+# Create bare repo for sync
+echo "Creating bare repo..."
+sudo -u "$GCP_VM_USER" bash -c "
+    if [ ! -d /home/$GCP_VM_USER/openclaw/.openclaw.git ]; then
+        git clone --bare /home/$GCP_VM_USER/openclaw/.openclaw /home/$GCP_VM_USER/openclaw/.openclaw.git
+    fi
+"
+
+# Set up post-receive hook
+echo "Setting up post-receive hook..."
+sudo -u "$GCP_VM_USER" bash -c "
+    mkdir -p /home/$GCP_VM_USER/openclaw/.openclaw.git/hooks
+    cat > /home/$GCP_VM_USER/openclaw/.openclaw.git/hooks/post-receive <<'HOOKEOF'
+#!/bin/bash
+GIT_WORK_TREE=/home/${GCP_VM_USER}/openclaw/.openclaw git checkout -f
+HOOKEOF
+    chmod +x /home/$GCP_VM_USER/openclaw/.openclaw.git/hooks/post-receive
+"
+
 # Configure Docker authentication to Artifact Registry
 echo "Configuring Docker authentication to Artifact Registry..."
-# Use gcloud from the VM's service account
 gcloud auth configure-docker "${REGISTRY_HOST}" --quiet
 
 # Allow openclaw user to use Docker auth
 sudo -u "$GCP_VM_USER" gcloud auth configure-docker "${REGISTRY_HOST}" --quiet
 
 # Create docker-compose.yml from template
-# Note: This will be created/updated by deploy.sh, but we create a placeholder here
 echo "Creating initial docker-compose.yml..."
 cat <<'EOF' | sudo -u "$GCP_VM_USER" tee "/home/$GCP_VM_USER/openclaw/docker-compose.yml" > /dev/null
 # Placeholder - will be updated by deploy.sh
-# This file should not be manually edited
-version: '3.8'
 services:
   openclaw-gateway:
     image: placeholder
@@ -137,7 +180,8 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=read-only
-ReadWritePaths=/home/$GCP_VM_USER/.openclaw
+ReadWritePaths=/home/$GCP_VM_USER/openclaw/.openclaw
+ReadWritePaths=/home/$GCP_VM_USER/openclaw/.openclaw.git
 
 [Install]
 WantedBy=multi-user.target
@@ -155,9 +199,11 @@ echo "VM initialization complete!"
 echo "=========================================="
 echo ""
 echo "Summary:"
-echo "- Docker installed and configured"
+echo "- Docker and git installed"
 echo "- User '$GCP_VM_USER' created"
-echo "- OpenClaw directories created"
+echo "- OpenClaw directories created (new layout)"
+echo "- .openclaw git repo initialized"
+echo "- Bare repo + post-receive hook set up"
 echo "- Systemd service configured"
 echo "- Docker authenticated to Artifact Registry"
 echo ""
@@ -167,4 +213,7 @@ echo "   ./scripts/build.sh"
 echo ""
 echo "2. Deploy OpenClaw (from local machine):"
 echo "   ./scripts/deploy.sh"
+echo ""
+echo "3. Clone .openclaw locally:"
+echo "   git clone openclaw-vm:/home/$GCP_VM_USER/openclaw/.openclaw.git .openclaw"
 echo ""
