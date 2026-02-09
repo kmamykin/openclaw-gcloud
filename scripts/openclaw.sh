@@ -181,7 +181,7 @@ case "$MODE" in
                 fi
 
                 # Push to VM bare repo
-                git push vm main 2>/dev/null || git push origin main
+                git push origin main
                 echo "Pushed to VM"
 
                 # Update working copy on VM
@@ -217,7 +217,7 @@ case "$MODE" in
                 fi
 
                 cd .openclaw
-                git pull vm main 2>/dev/null || git pull origin main
+                git pull origin main
                 cd "$PROJECT_ROOT"
 
                 echo ""
