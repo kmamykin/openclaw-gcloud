@@ -120,6 +120,8 @@ echo "   Created .gitignore"
 echo "==> Step 5: Initialize git in ~/.openclaw"
 cd "${OLD_OPENCLAW}"
 git init
+git config user.email "openclaw@vm"
+git config user.name "OpenClaw VM"
 git add -A
 git commit -m "Initial commit from VM restructure"
 echo "   Git initialized with initial commit"
@@ -170,6 +172,8 @@ echo "==> Step 9: Set up workspace as git repo (if it exists)"
 if [ -d "${NEW_OPENCLAW}/workspace" ] && [ ! -d "${NEW_OPENCLAW}/workspace/.git" ]; then
     cd "${NEW_OPENCLAW}/workspace"
     git init
+    git config user.email "openclaw@vm"
+    git config user.name "OpenClaw VM"
     git add -A 2>/dev/null || true
     git commit -m "Initial workspace commit" 2>/dev/null || true
     echo "   Workspace git initialized (add GitHub remote manually)"

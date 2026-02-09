@@ -38,7 +38,7 @@ case "$ACTION" in
 set -e
 
 # Source .env
-cd /home/${GCP_VM_USER}/openclaw
+cd $HOME/openclaw
 set -a
 source .env
 [ -f .openclaw/.env ] && source .openclaw/.env
@@ -50,7 +50,7 @@ BACKUP_PATH="gs://${GCS_BUCKET_NAME}/openclaw-backup/${BACKUP_DATE}"
 echo "Backing up to: $BACKUP_PATH"
 
 # Create a compressed archive from the new location
-cd /home/${GCP_VM_USER}/openclaw
+cd $HOME/openclaw
 tar czf /tmp/openclaw-backup.tar.gz .openclaw/
 
 gsutil cp /tmp/openclaw-backup.tar.gz "$BACKUP_PATH/openclaw-data.tar.gz"
@@ -104,7 +104,7 @@ EOFSCRIPT
 set -e
 
 # Source .env
-cd /home/${GCP_VM_USER}/openclaw
+cd $HOME/openclaw
 set -a
 source .env
 [ -f .openclaw/.env ] && source .openclaw/.env
@@ -116,12 +116,12 @@ docker compose stop openclaw-gateway || true
 echo "Downloading backup from GCS..."
 gsutil cp "gs://${GCS_BUCKET_NAME}/openclaw-backup/latest.tar.gz" /tmp/openclaw-backup.tar.gz
 
-if [ -d "/home/${GCP_VM_USER}/openclaw/.openclaw" ]; then
-    mv "/home/${GCP_VM_USER}/openclaw/.openclaw" "/home/${GCP_VM_USER}/openclaw/.openclaw.pre-restore-$(date +%Y%m%d-%H%M%S)"
+if [ -d "$HOME/openclaw/.openclaw" ]; then
+    mv "$HOME/openclaw/.openclaw" "$HOME/openclaw/.openclaw.pre-restore-$(date +%Y%m%d-%H%M%S)"
 fi
 
 echo "Extracting backup..."
-cd /home/${GCP_VM_USER}/openclaw
+cd $HOME/openclaw
 tar xzf /tmp/openclaw-backup.tar.gz
 
 # Cleanup
