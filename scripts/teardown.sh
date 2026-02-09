@@ -33,12 +33,11 @@ echo "=========================================="
 echo "WARNING: This will DELETE the following resources:"
 echo "=========================================="
 echo "- VM instance: $VM_NAME"
+echo "- Snapshot policy: openclaw-daily-snapshot"
+echo "- Snapshots for VM: $VM_NAME"
 echo "- Firewall rule: allow-iap-ssh"
 echo "- Cloud NAT: ${CLOUD_NAT_NAME:-openclaw-nat}"
 echo "- Cloud Router: ${CLOUD_ROUTER_NAME:-openclaw-router}"
-if [ -n "$GCS_BUCKET_NAME" ]; then
-    echo "- GCS bucket: $GCS_BUCKET_NAME"
-fi
 echo "- Artifact Registry: $GCP_REPO_NAME"
 echo ""
 echo "Project: $GCP_PROJECT_ID"
@@ -66,6 +65,36 @@ if gcloud compute instances describe "$VM_NAME" \
     echo "VM deleted"
 else
     echo "VM $VM_NAME does not exist, skipping..."
+fi
+
+# Delete snapshot policy
+SNAPSHOT_POLICY="openclaw-daily-snapshot"
+echo ""
+echo "Deleting snapshot policy: $SNAPSHOT_POLICY..."
+if gcloud compute resource-policies describe "$SNAPSHOT_POLICY" \
+    --region="$GCP_REGION" &>/dev/null; then
+    gcloud compute resource-policies delete "$SNAPSHOT_POLICY" \
+        --region="$GCP_REGION" \
+        --quiet
+    echo "Snapshot policy deleted"
+else
+    echo "Snapshot policy does not exist, skipping..."
+fi
+
+# Delete remaining snapshots for this VM
+echo ""
+echo "Deleting snapshots for VM: $VM_NAME..."
+SNAPSHOTS=$(gcloud compute snapshots list \
+    --filter="sourceDisk~${VM_NAME}$" \
+    --format="value(name)" 2>/dev/null || true)
+if [ -n "$SNAPSHOTS" ]; then
+    echo "$SNAPSHOTS" | while read -r SNAP; do
+        echo "  Deleting snapshot: $SNAP"
+        gcloud compute snapshots delete "$SNAP" --quiet
+    done
+    echo "Snapshots deleted"
+else
+    echo "No snapshots found, skipping..."
 fi
 
 # Delete firewall rule
@@ -107,18 +136,6 @@ if gcloud compute routers describe "$ROUTER_NAME" \
     echo "Cloud Router deleted"
 else
     echo "Cloud Router does not exist, skipping..."
-fi
-
-# Delete GCS bucket
-if [ -n "$GCS_BUCKET_NAME" ]; then
-    echo ""
-    echo "Deleting GCS bucket: $GCS_BUCKET_NAME..."
-    if gsutil ls "gs://$GCS_BUCKET_NAME" &>/dev/null; then
-        gsutil -m rm -r "gs://$GCS_BUCKET_NAME"
-        echo "Bucket deleted"
-    else
-        echo "Bucket does not exist, skipping..."
-    fi
 fi
 
 # Delete Artifact Registry repository

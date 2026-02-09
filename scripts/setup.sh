@@ -75,18 +75,6 @@ fi
 echo ""
 gcloud auth configure-docker "${REGISTRY_HOST}" --quiet
 
-# Create GCS backup bucket (optional)
-if [ -n "$GCS_BUCKET_NAME" ]; then
-    echo ""
-    echo "Creating GCS backup bucket..."
-    if gsutil ls "gs://$GCS_BUCKET_NAME" &>/dev/null; then
-        echo "Bucket $GCS_BUCKET_NAME already exists, skipping..."
-    else
-        gsutil mb -p "$GCP_PROJECT_ID" -l "$GCP_REGION" "gs://$GCS_BUCKET_NAME"
-        echo "Bucket created successfully"
-    fi
-fi
-
 # Create VM
 echo ""
 echo "Creating VM instance: $VM_NAME..."
@@ -135,6 +123,36 @@ else
 
     echo "VM created successfully"
     VM_EXISTS=0
+fi
+
+# Create snapshot schedule for automated daily backups
+SNAPSHOT_POLICY="openclaw-daily-snapshot"
+echo ""
+echo "Creating snapshot schedule policy..."
+if gcloud compute resource-policies describe "$SNAPSHOT_POLICY" \
+    --region="$GCP_REGION" &>/dev/null; then
+    echo "Snapshot policy $SNAPSHOT_POLICY already exists, skipping..."
+else
+    gcloud compute resource-policies create snapshot-schedule "$SNAPSHOT_POLICY" \
+        --region="$GCP_REGION" \
+        --max-retention-days=7 \
+        --daily-schedule \
+        --start-time=03:00
+    echo "Snapshot policy created"
+fi
+
+# Attach snapshot policy to VM boot disk
+echo "Attaching snapshot policy to VM disk..."
+ATTACHED_POLICIES=$(gcloud compute disks describe "$VM_NAME" \
+    --zone="$GCP_ZONE" \
+    --format="value(resourcePolicies)" 2>/dev/null || true)
+if echo "$ATTACHED_POLICIES" | grep -q "$SNAPSHOT_POLICY"; then
+    echo "Snapshot policy already attached, skipping..."
+else
+    gcloud compute disks add-resource-policies "$VM_NAME" \
+        --zone="$GCP_ZONE" \
+        --resource-policies="$SNAPSHOT_POLICY"
+    echo "Snapshot policy attached"
 fi
 
 # Create firewall rule for IAP
