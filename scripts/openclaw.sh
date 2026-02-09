@@ -181,7 +181,7 @@ case "$MODE" in
                 fi
 
                 # Push to VM bare repo
-                git push origin main
+                git push origin HEAD
                 echo "Pushed to VM"
 
                 # Update working copy on VM
@@ -207,7 +207,7 @@ case "$MODE" in
                     --zone="$GCP_ZONE" \
                     --tunnel-through-iap \
                     --project="$GCP_PROJECT_ID" \
-                    --command="cd /home/${GCP_VM_USER}/openclaw/.openclaw && git add -A && git diff --cached --quiet || git commit -m 'VM changes $(date +%Y%m%d-%H%M%S)' && git push origin main"
+                    --command="cd /home/${GCP_VM_USER}/openclaw/.openclaw && git add -A && git diff --cached --quiet || git commit -m 'VM changes $(date +%Y%m%d-%H%M%S)' && git push origin HEAD"
 
                 # Pull locally
                 if [ ! -d .openclaw/.git ]; then
@@ -217,7 +217,7 @@ case "$MODE" in
                 fi
 
                 cd .openclaw
-                git pull origin main
+                git pull origin
                 cd "$PROJECT_ROOT"
 
                 echo ""
