@@ -129,21 +129,21 @@ case "$MODE" in
         echo "Updating VM working copy..."
         ssh "$VM_HOST" "cd $VM_DIR/.openclaw && git pull"
 
-        # Workspace
-        echo ""
-        echo "=== .openclaw/workspace ==="
+        # Workspaces
+        for ws_dir in .openclaw/workspace-*/; do
+            [ -d "$ws_dir/.git" ] || continue
+            ws_name="$(basename "$ws_dir")"
+            echo ""
+            echo "=== .openclaw/$ws_name ==="
 
-        if [ -d .openclaw/workspace/.git ]; then
-            cd .openclaw/workspace
+            cd "$ws_dir"
             git push origin HEAD 2>/dev/null || echo "No GitHub remote or nothing to push"
             cd "$PROJECT_ROOT"
             echo "Pushed to GitHub"
 
-            echo "Pulling workspace on VM from GitHub..."
-            ssh "$VM_HOST" "cd $VM_DIR/.openclaw/workspace && git pull origin HEAD 2>/dev/null || echo 'No workspace repo on VM'"
-        else
-            echo "No local workspace git repo found, skipping"
-        fi
+            echo "Pulling $ws_name on VM from GitHub..."
+            ssh "$VM_HOST" "cd $VM_DIR/.openclaw/$ws_name && git pull origin HEAD 2>/dev/null || echo 'No $ws_name repo on VM'"
+        done
 
         echo ""
         echo "Push complete"
@@ -167,20 +167,20 @@ case "$MODE" in
         git pull origin
         cd "$PROJECT_ROOT"
 
-        # Workspace
-        echo ""
-        echo "=== .openclaw/workspace ==="
+        # Workspaces
+        for ws_dir in .openclaw/workspace-*/; do
+            [ -d "$ws_dir/.git" ] || continue
+            ws_name="$(basename "$ws_dir")"
+            echo ""
+            echo "=== .openclaw/$ws_name ==="
 
-        if [ -d .openclaw/workspace/.git ]; then
-            echo "Committing VM workspace changes..."
-            ssh "$VM_HOST" "cd $VM_DIR/.openclaw/workspace && git add -A && (git diff --cached --quiet || git commit -m 'VM workspace changes $(date +%Y%m%d-%H%M%S)') && git push origin HEAD 2>/dev/null || echo 'No workspace repo on VM'"
+            echo "Committing VM $ws_name changes..."
+            ssh "$VM_HOST" "cd $VM_DIR/.openclaw/$ws_name && git add -A && (git diff --cached --quiet || git commit -m 'VM $ws_name changes \$(date +%Y%m%d-%H%M%S)') && git push origin HEAD 2>/dev/null || echo 'No $ws_name repo on VM'"
 
-            cd .openclaw/workspace
+            cd "$ws_dir"
             git pull origin 2>/dev/null || echo "No GitHub remote or nothing to pull"
             cd "$PROJECT_ROOT"
-        else
-            echo "No local workspace git repo found, skipping"
-        fi
+        done
 
         echo ""
         echo "Pull complete"
@@ -200,8 +200,8 @@ case "$MODE" in
         echo "  restart       - Restart gateway container"
         echo "  stop          - Stop gateway container"
         echo "  start         - Start gateway container"
-        echo "  push          - Push .openclaw and workspace to VM"
-        echo "  pull          - Pull .openclaw and workspace from VM"
+        echo "  push          - Push .openclaw and workspaces to VM"
+        echo "  pull          - Pull .openclaw and workspaces from VM"
         echo ""
         echo "Examples:"
         echo "  $0                                           # Open SSH shell to VM"

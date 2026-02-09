@@ -110,7 +110,6 @@ sudo usermod -aG docker "$GCP_VM_USER"
 echo "Creating OpenClaw directories..."
 sudo -u "$GCP_VM_USER" mkdir -p "/home/$GCP_VM_USER/openclaw"
 sudo -u "$GCP_VM_USER" mkdir -p "/home/$GCP_VM_USER/openclaw/.openclaw"
-sudo -u "$GCP_VM_USER" mkdir -p "/home/$GCP_VM_USER/openclaw/.openclaw/workspace"
 sudo -u "$GCP_VM_USER" mkdir -p "/home/$GCP_VM_USER/openclaw/.openclaw/sessions"
 sudo -u "$GCP_VM_USER" mkdir -p "/home/$GCP_VM_USER/openclaw/.openclaw/.config/gogcli"
 
@@ -127,7 +126,7 @@ sudo -u "$GCP_VM_USER" bash -c "
     if [ ! -d .git ]; then
         # Create .gitignore
         cat > .gitignore <<'GITEOF'
-workspace/
+workspace-*/
 sessions/
 GITEOF
         # Create placeholder .env

@@ -26,7 +26,7 @@ openclaw-gcloud/
 │   ├── .config/gogcli/         # OAuth tokens (moved from .config/gogcli/)
 │   ├── openclaw.json           # OpenClaw config
 │   ├── credentials/            # Model credentials
-│   ├── workspace/              # Separate git repo (GitHub remote)
+│   ├── workspace-*/             # Separate git repos (GitHub remotes)
 │   ├── sessions/               # Ephemeral (gitignored)
 │   └── .gitignore
 ├── openclaw/                   # Official OpenClaw repository (optional, gitignored)
@@ -79,13 +79,13 @@ Both modes use identical Docker images and mount `.openclaw/` the same way.
         │                                             │
         ▼                                             ▼
 ┌──────────────────┐                          ┌──────────────────┐
-│ workspace/       │      git push/pull       │ workspace/       │
-│  (git repo)      │ ◄──────────────────────► │  (git repo)      │
+│ workspace-*/     │      git push/pull       │ workspace-*/     │
+│  (git repos)     │ ◄──────────────────────► │  (git repos)     │
 └──────────────────┘    (via GitHub)          └──────────────────┘
 ```
 
 - `.openclaw/` syncs directly between local and VM via git (never touches GitHub)
-- `workspace/` syncs via GitHub as a backup and sharing mechanism
+- `workspace-*/` dirs sync via GitHub as a backup and sharing mechanism
 
 ### Docker Image Strategy
 
@@ -154,10 +154,10 @@ cp .openclaw/.env.example .openclaw/.env
 ### Syncing Between Local and VM
 
 ```bash
-# Push local .openclaw and workspace changes to VM
+# Push local .openclaw and workspaces to VM
 ./scripts/openclaw.sh push
 
-# Pull VM .openclaw and workspace changes locally
+# Pull VM .openclaw and workspaces locally
 ./scripts/openclaw.sh pull
 ```
 
@@ -207,8 +207,8 @@ Runs on VM: installs Docker + git, creates directories, initializes .openclaw gi
 ./scripts/openclaw.sh restart       # Restart container
 ./scripts/openclaw.sh stop          # Stop container
 ./scripts/openclaw.sh start         # Start container
-./scripts/openclaw.sh push          # Push .openclaw and workspace to VM
-./scripts/openclaw.sh pull          # Pull .openclaw and workspace from VM
+./scripts/openclaw.sh push          # Push .openclaw and workspaces to VM
+./scripts/openclaw.sh pull          # Pull .openclaw and workspaces from VM
 ```
 
 ### `./scripts/local.sh` - Local Docker Execution
@@ -241,7 +241,7 @@ Runs OAuth flow locally, saves credentials to `.openclaw/.config/gogcli/`.
 | Model credentials | `.openclaw/credentials/` | git (local <-> VM) |
 | gogcli OAuth tokens | `.openclaw/.config/gogcli/` | git (local <-> VM) |
 | Secrets (.env) | `.openclaw/.env` | git (local <-> VM) |
-| Agent workspace | `.openclaw/workspace/` | git via GitHub |
+| Agent workspaces | `.openclaw/workspace-*/` | git via GitHub |
 | Channel sessions | `.openclaw/sessions/` | ephemeral (gitignored) |
 | Docker images | VM boot disk / local | Artifact Registry |
 
@@ -255,7 +255,7 @@ Runs OAuth flow locally, saves credentials to `.openclaw/.config/gogcli/`.
 │   ├── .config/gogcli/         # OAuth tokens
 │   ├── openclaw.json           # Config
 │   ├── credentials/            # Model creds
-│   ├── workspace/              # Separate git repo (GitHub remote)
+│   ├── workspace-*/             # Separate git repos (GitHub remotes)
 │   ├── sessions/               # Ephemeral (gitignored)
 │   └── .gitignore
 ├── docker-compose.yml          # Generated from template

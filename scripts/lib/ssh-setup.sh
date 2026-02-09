@@ -31,6 +31,7 @@ Host ${host_entry}
     User ${GCP_VM_USER}
     IdentityFile ~/.ssh/google_compute_engine
     ProxyCommand gcloud compute start-iap-tunnel ${VM_NAME} 22 --zone=${GCP_ZONE} --listen-on-stdin --project=${GCP_PROJECT_ID} 2>/dev/null
+    ForwardAgent yes
     StrictHostKeyChecking no
     UserKnownHostsFile /dev/null
 EOF
