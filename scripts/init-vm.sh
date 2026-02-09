@@ -125,12 +125,6 @@ sudo -u "$GCP_VM_USER" git config --global user.name 'Kliment Mamykin'
 echo "Creating OpenClaw directories..."
 sudo -u "$GCP_VM_USER" mkdir -p "/home/$GCP_VM_USER/openclaw"
 
-# Copy .env to user directory
-echo "Copying .env to OpenClaw directory..."
-sudo cp /tmp/.env "/home/$GCP_VM_USER/openclaw/.env"
-sudo chown "$GCP_VM_USER:$GCP_VM_USER" "/home/$GCP_VM_USER/openclaw/.env"
-sudo chmod 600 "/home/$GCP_VM_USER/openclaw/.env"
-
 # Set up bare repo and working copy for .openclaw git sync
 # The bare repo receives pushes from local machine; the working copy is used by the container.
 # We keep the bare repo empty so that the first `openclaw.sh push` from local populates it

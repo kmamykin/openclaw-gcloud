@@ -69,7 +69,6 @@ envsubst < docker/docker-compose.yml.tpl > /tmp/docker-compose.yml
 
 # Copy files to VM
 scp /tmp/docker-compose.yml "$VM_HOST:$VM_DIR/docker-compose.yml"
-scp .env "$VM_HOST:$VM_DIR/.env"
 
 echo "Files copied"
 
@@ -83,9 +82,8 @@ set -e
 
 cd /home/${GCP_VM_USER}/openclaw
 
-# Source both env files
+# Source openclaw env for docker compose
 set -a
-source .env
 [ -f .openclaw/.env ] && source .openclaw/.env
 set +a
 

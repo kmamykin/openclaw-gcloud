@@ -6,7 +6,6 @@ services:
     ports:
       - "127.0.0.1:${OPENCLAW_GATEWAY_PORT}:${OPENCLAW_GATEWAY_PORT}"
     env_file:
-      - .env
       - .openclaw/.env
     environment:
       - HOME=/home/node
@@ -40,7 +39,6 @@ services:
     image: ${REGISTRY}/openclaw-cloud:latest
     container_name: openclaw-cli
     env_file:
-      - .env
       - .openclaw/.env
     environment:
       - HOME=/home/node
