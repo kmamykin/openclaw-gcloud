@@ -22,6 +22,8 @@ load_env || exit 1
 # Validate required variables
 require_vars VM_NAME GCP_ZONE || exit 1
 
+ensure_ssh_config
+
 MODE="${1:-vm-shell}"
 shift || true  # Remove first argument, keep rest for cli commands
 
@@ -30,11 +32,7 @@ case "$MODE" in
         echo "Opening SSH shell to $VM_NAME..."
         echo "Port forwarding: localhost:${OPENCLAW_GATEWAY_PORT} -> VM:${OPENCLAW_GATEWAY_PORT}"
         echo ""
-        gcloud compute ssh "$VM_NAME" \
-            --zone="$GCP_ZONE" \
-            --tunnel-through-iap \
-            --project="$GCP_PROJECT_ID" \
-            -- -L "${OPENCLAW_GATEWAY_PORT}:localhost:${OPENCLAW_GATEWAY_PORT}"
+        ssh -L "${OPENCLAW_GATEWAY_PORT}:localhost:${OPENCLAW_GATEWAY_PORT}" "$VM_HOST"
         ;;
 
     port-forward|forward)
@@ -48,29 +46,17 @@ case "$MODE" in
         echo ""
         echo "Press Ctrl+C to stop port forwarding"
         echo ""
-        gcloud compute ssh "$VM_NAME" \
-            --zone="$GCP_ZONE" \
-            --tunnel-through-iap \
-            --project="$GCP_PROJECT_ID" \
-            -- -L "${OPENCLAW_GATEWAY_PORT}:localhost:${OPENCLAW_GATEWAY_PORT}" -N
+        ssh -L "${OPENCLAW_GATEWAY_PORT}:localhost:${OPENCLAW_GATEWAY_PORT}" -N "$VM_HOST"
         ;;
 
     status)
-        gcloud compute ssh "$VM_NAME" \
-            --zone="$GCP_ZONE" \
-            --tunnel-through-iap \
-            --project="$GCP_PROJECT_ID" \
-            --command="cd /home/${GCP_VM_USER}/openclaw && docker compose ps"
+        ssh "$VM_HOST" "cd $VM_DIR && docker compose ps"
         ;;
 
     logs)
         echo "Press Ctrl+C to stop"
         echo ""
-        gcloud compute ssh "$VM_NAME" \
-            --zone="$GCP_ZONE" \
-            --tunnel-through-iap \
-            --project="$GCP_PROJECT_ID" \
-            --command="cd /home/${GCP_VM_USER}/openclaw && docker compose logs -f openclaw-gateway"
+        ssh "$VM_HOST" "cd $VM_DIR && docker compose logs -f openclaw-gateway"
         ;;
 
     cli)
@@ -92,59 +78,34 @@ case "$MODE" in
         for arg in "$@"; do
             CLI_ARGS="${CLI_ARGS} \"${arg}\""
         done
-        gcloud compute ssh "$VM_NAME" \
-            --zone="$GCP_ZONE" \
-            --tunnel-through-iap \
-            --project="$GCP_PROJECT_ID" \
-            --command="cd /home/${GCP_VM_USER}/openclaw && docker compose run --rm openclaw-gateway ${CLI_ARGS}"
+        ssh "$VM_HOST" "cd $VM_DIR && docker compose run --rm openclaw-gateway ${CLI_ARGS}"
         ;;
 
     shell)
         echo "Opening bash shell in openclaw-gateway container..."
         echo ""
-        gcloud compute ssh "$VM_NAME" \
-            --zone="$GCP_ZONE" \
-            --tunnel-through-iap \
-            --project="$GCP_PROJECT_ID" \
-            --command="cd /home/${GCP_VM_USER}/openclaw && docker compose exec -it openclaw-gateway bash" \
-            -- -t
+        ssh -t "$VM_HOST" "cd $VM_DIR && docker compose exec -it openclaw-gateway bash"
         ;;
 
     ps)
-        gcloud compute ssh "$VM_NAME" \
-            --zone="$GCP_ZONE" \
-            --tunnel-through-iap \
-            --project="$GCP_PROJECT_ID" \
-            --command="cd /home/${GCP_VM_USER}/openclaw && docker compose ps"
+        ssh "$VM_HOST" "cd $VM_DIR && docker compose ps"
         ;;
 
     restart)
         echo "Restarting OpenClaw gateway..."
-        gcloud compute ssh "$VM_NAME" \
-            --zone="$GCP_ZONE" \
-            --tunnel-through-iap \
-            --project="$GCP_PROJECT_ID" \
-            --command="cd /home/${GCP_VM_USER}/openclaw && docker compose restart openclaw-gateway"
+        ssh "$VM_HOST" "cd $VM_DIR && docker compose restart openclaw-gateway"
         echo "Gateway restarted"
         ;;
 
     stop)
         echo "Stopping OpenClaw gateway..."
-        gcloud compute ssh "$VM_NAME" \
-            --zone="$GCP_ZONE" \
-            --tunnel-through-iap \
-            --project="$GCP_PROJECT_ID" \
-            --command="cd /home/${GCP_VM_USER}/openclaw && docker compose stop openclaw-gateway"
+        ssh "$VM_HOST" "cd $VM_DIR && docker compose stop openclaw-gateway"
         echo "Gateway stopped"
         ;;
 
     start)
         echo "Starting OpenClaw gateway..."
-        gcloud compute ssh "$VM_NAME" \
-            --zone="$GCP_ZONE" \
-            --tunnel-through-iap \
-            --project="$GCP_PROJECT_ID" \
-            --command="cd /home/${GCP_VM_USER}/openclaw && docker compose start openclaw-gateway"
+        ssh "$VM_HOST" "cd $VM_DIR && docker compose start openclaw-gateway"
         echo "Gateway started"
         ;;
 
@@ -152,11 +113,7 @@ case "$MODE" in
         SYNC_MODE="${1:-}"
         shift || true
 
-        # Ensure SSH config is set up for git access
-        ensure_ssh_config
-
-        VM_REMOTE="openclaw-vm"
-        BARE_REPO_PATH="/home/${GCP_VM_USER}/openclaw/.openclaw.git"
+        BARE_REPO_PATH="$VM_DIR/.openclaw.git"
 
         case "$SYNC_MODE" in
             push)
@@ -166,7 +123,7 @@ case "$MODE" in
                 # Check if .openclaw is a git repo
                 if [ ! -d .openclaw/.git ]; then
                     echo "ERROR: .openclaw is not a git repository"
-                    echo "Clone it first: git clone ${VM_REMOTE}:${BARE_REPO_PATH} .openclaw"
+                    echo "Clone it first: git clone ${VM_HOST}:${BARE_REPO_PATH} .openclaw"
                     exit 1
                 fi
 
@@ -186,11 +143,7 @@ case "$MODE" in
 
                 # Update working copy on VM
                 echo "Updating VM working copy..."
-                gcloud compute ssh "$VM_NAME" \
-                    --zone="$GCP_ZONE" \
-                    --tunnel-through-iap \
-                    --project="$GCP_PROJECT_ID" \
-                    --command="cd /home/${GCP_VM_USER}/openclaw/.openclaw && git pull"
+                ssh "$VM_HOST" "cd $VM_DIR/.openclaw && git pull"
 
                 cd "$PROJECT_ROOT"
                 echo ""
@@ -203,16 +156,12 @@ case "$MODE" in
 
                 # Commit and push on VM
                 echo "Committing VM changes..."
-                gcloud compute ssh "$VM_NAME" \
-                    --zone="$GCP_ZONE" \
-                    --tunnel-through-iap \
-                    --project="$GCP_PROJECT_ID" \
-                    --command="cd /home/${GCP_VM_USER}/openclaw/.openclaw && git add -A && git diff --cached --quiet || git commit -m 'VM changes $(date +%Y%m%d-%H%M%S)' && git push origin HEAD"
+                ssh "$VM_HOST" "cd $VM_DIR/.openclaw && git add -A && git diff --cached --quiet || git commit -m 'VM changes $(date +%Y%m%d-%H%M%S)' && git push origin HEAD"
 
                 # Pull locally
                 if [ ! -d .openclaw/.git ]; then
                     echo "ERROR: .openclaw is not a git repository"
-                    echo "Clone it first: git clone ${VM_REMOTE}:${BARE_REPO_PATH} .openclaw"
+                    echo "Clone it first: git clone ${VM_HOST}:${BARE_REPO_PATH} .openclaw"
                     exit 1
                 fi
 
@@ -244,11 +193,7 @@ case "$MODE" in
 
                 # Pull on VM from GitHub
                 echo "Pulling workspace on VM from GitHub..."
-                gcloud compute ssh "$VM_NAME" \
-                    --zone="$GCP_ZONE" \
-                    --tunnel-through-iap \
-                    --project="$GCP_PROJECT_ID" \
-                    --command="cd /home/${GCP_VM_USER}/openclaw/.openclaw/workspace && git pull origin main 2>/dev/null || echo 'No GitHub remote configured on VM'"
+                ssh "$VM_HOST" "cd $VM_DIR/.openclaw/workspace && git pull origin main 2>/dev/null || echo 'No GitHub remote configured on VM'"
 
                 echo ""
                 echo "Workspace sync complete"

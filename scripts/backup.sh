@@ -10,6 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/path.sh"
 source "${SCRIPT_DIR}/lib/env.sh"
 source "${SCRIPT_DIR}/lib/validation.sh"
+source "${SCRIPT_DIR}/lib/ssh-setup.sh"
 
 # Get project root and change to it
 PROJECT_ROOT="$(get_project_root)"
@@ -20,6 +21,8 @@ load_env || exit 1
 
 # Validate required variables
 require_vars VM_NAME GCP_ZONE GCS_BUCKET_NAME || exit 1
+
+ensure_ssh_config
 
 ACTION="${1:-backup}"
 
@@ -69,11 +72,7 @@ echo "  gs://${GCS_BUCKET_NAME}/openclaw-backup/latest.tar.gz"
 EOFSCRIPT
 )
 
-        gcloud compute ssh "$VM_NAME" \
-            --zone="$GCP_ZONE" \
-            --tunnel-through-iap \
-            --project="$GCP_PROJECT_ID" \
-            --command="$BACKUP_SCRIPT"
+        ssh "$VM_HOST" "$BACKUP_SCRIPT"
 
         echo ""
         echo "=========================================="
@@ -134,11 +133,7 @@ echo "Restore complete"
 EOFSCRIPT
 )
 
-        gcloud compute ssh "$VM_NAME" \
-            --zone="$GCP_ZONE" \
-            --tunnel-through-iap \
-            --project="$GCP_PROJECT_ID" \
-            --command="$RESTORE_SCRIPT"
+        ssh "$VM_HOST" "$RESTORE_SCRIPT"
 
         echo ""
         echo "=========================================="

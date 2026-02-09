@@ -22,6 +22,8 @@ load_env || exit 1
 # Validate required variables
 require_vars VM_NAME GCP_ZONE GCP_REGION GCP_PROJECT_ID GCP_REPO_NAME || exit 1
 
+ensure_ssh_config
+
 # Compute registry path (derived from base vars)
 export REGISTRY_HOST="${GCP_REGION}-docker.pkg.dev"
 export REGISTRY="${REGISTRY_HOST}/${GCP_PROJECT_ID}/${GCP_REPO_NAME}"
@@ -46,7 +48,6 @@ fi
 # Sync .openclaw changes to VM before deploy
 if [ $SKIP_SYNC -eq 0 ] && [ -d .openclaw/.git ]; then
     echo "Syncing .openclaw to VM..."
-    ensure_ssh_config
     "${SCRIPT_DIR}/openclaw.sh" sync push
     echo ""
 fi
@@ -67,13 +68,8 @@ fi
 envsubst < docker-compose.yml.tpl > /tmp/docker-compose.yml
 
 # Copy files to VM
-gcloud compute scp /tmp/docker-compose.yml "${VM_NAME}:/home/${GCP_VM_USER}/openclaw/docker-compose.yml" \
-    --zone="$GCP_ZONE" \
-    --tunnel-through-iap
-
-gcloud compute scp .env "${VM_NAME}:/home/${GCP_VM_USER}/openclaw/.env" \
-    --zone="$GCP_ZONE" \
-    --tunnel-through-iap
+scp /tmp/docker-compose.yml "$VM_HOST:$VM_DIR/docker-compose.yml"
+scp .env "$VM_HOST:$VM_DIR/.env"
 
 echo "Files copied"
 
@@ -114,17 +110,11 @@ echo "Container started successfully"
 EOFSCRIPT
 )
 
-gcloud compute ssh "$VM_NAME" \
-    --zone="$GCP_ZONE" \
-    --tunnel-through-iap \
-    --command="$DEPLOY_SCRIPT"
+ssh "$VM_HOST" "$DEPLOY_SCRIPT"
 
 # Show logs
 echo ""
-gcloud compute ssh "$VM_NAME" \
-    --zone="$GCP_ZONE" \
-    --tunnel-through-iap \
-    --command="cd /home/${GCP_VM_USER}/openclaw && docker compose logs --tail=50 openclaw-gateway"
+ssh "$VM_HOST" "cd $VM_DIR && docker compose logs --tail=50 openclaw-gateway"
 
 echo ""
 echo "=========================================="

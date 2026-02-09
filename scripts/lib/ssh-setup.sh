@@ -38,3 +38,6 @@ EOF
     chmod 600 "$ssh_config"
     echo "Added '${host_entry}' entry to ${ssh_config}"
 }
+
+VM_HOST="openclaw-vm"
+VM_DIR="/home/${GCP_VM_USER}/openclaw"
