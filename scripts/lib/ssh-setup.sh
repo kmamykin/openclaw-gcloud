@@ -41,3 +41,4 @@ EOF
 
 VM_HOST="openclaw-vm"
 VM_DIR="/home/${GCP_VM_USER}/openclaw"
+BARE_REPO_PATH="$VM_DIR/.openclaw.git"

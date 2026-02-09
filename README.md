@@ -150,14 +150,11 @@ cp .openclaw/.env.example .openclaw/.env
 ### Syncing Between Local and VM
 
 ```bash
-# Push local .openclaw changes to VM
-./scripts/openclaw.sh sync push
+# Push local .openclaw and workspace changes to VM
+./scripts/openclaw.sh push
 
-# Pull VM .openclaw changes locally
-./scripts/openclaw.sh sync pull
-
-# Sync workspace via GitHub
-./scripts/openclaw.sh sync workspace
+# Pull VM .openclaw and workspace changes locally
+./scripts/openclaw.sh pull
 ```
 
 ### gogcli Authentication
@@ -169,8 +166,8 @@ echo "export GOG_KEYRING_PASSWORD=$(openssl rand -hex 32)" >> .openclaw/.env
 # 2. Authenticate locally (opens browser)
 ./scripts/gog-auth-local.sh ~/Downloads/client_secret.json default you@gmail.com
 
-# 3. Sync to VM
-./scripts/openclaw.sh sync push
+# 3. Push to VM
+./scripts/openclaw.sh push
 
 # 4. Restart to pick up new credentials
 ./scripts/openclaw.sh restart
@@ -204,9 +201,8 @@ Runs on VM: installs Docker + git, creates directories, initializes .openclaw gi
 ./scripts/openclaw.sh status        # Container status
 ./scripts/openclaw.sh ps            # Container status
 ./scripts/openclaw.sh restart       # Restart container
-./scripts/openclaw.sh sync push     # Push .openclaw to VM
-./scripts/openclaw.sh sync pull     # Pull .openclaw from VM
-./scripts/openclaw.sh sync workspace # Sync workspace via GitHub
+./scripts/openclaw.sh push          # Push .openclaw and workspace to VM
+./scripts/openclaw.sh pull          # Pull .openclaw and workspace from VM
 ```
 
 ### `./scripts/local.sh` - Local Docker Execution
@@ -297,8 +293,8 @@ docker image inspect openclaw-cloud:latest  # Check image exists
 ```bash
 # Verify SSH config
 cat ~/.ssh/config | grep openclaw-vm
-# Re-run sync (will auto-setup SSH config)
-./scripts/openclaw.sh sync push
+# Re-run push (will auto-setup SSH config)
+./scripts/openclaw.sh push
 ```
 
 ### Can't connect to UI

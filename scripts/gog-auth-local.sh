@@ -36,7 +36,7 @@ if [ $# -lt 3 ]; then
     echo "  $0 ~/Downloads/personal.json personal you@gmail.com"
     echo ""
     echo "Credentials are saved to .openclaw/.config/gogcli/"
-    echo "Then sync to VM with: ./scripts/openclaw.sh sync push"
+    echo "Then sync to VM with: ./scripts/openclaw.sh push"
     echo ""
     exit 1
 fi
@@ -140,7 +140,7 @@ echo ""
 echo "Next steps:"
 echo ""
 echo "1. Sync to VM:"
-echo "   ./scripts/openclaw.sh sync push"
+echo "   ./scripts/openclaw.sh push"
 echo ""
 echo "2. For local Docker testing:"
 echo "   ./scripts/local.sh start"

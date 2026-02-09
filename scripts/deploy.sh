@@ -48,7 +48,7 @@ fi
 # Sync .openclaw changes to VM before deploy
 if [ $SKIP_SYNC -eq 0 ] && [ -d .openclaw/.git ]; then
     echo "Syncing .openclaw to VM..."
-    "${SCRIPT_DIR}/openclaw.sh" sync push
+    "${SCRIPT_DIR}/openclaw.sh" push
     echo ""
 fi
 

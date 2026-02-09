@@ -2,7 +2,7 @@
 set -e
 
 # SSH helper script for OpenClaw Compute Engine instance
-# Supports: vm-shell, port-forward, shell, logs, cli, status, ps, restart, stop, start, sync
+# Supports: vm-shell, port-forward, shell, logs, cli, status, ps, restart, stop, start, push, pull
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -109,107 +109,81 @@ case "$MODE" in
         echo "Gateway started"
         ;;
 
-    sync)
-        SYNC_MODE="${1:-}"
-        shift || true
+    push)
+        echo "=== .openclaw ==="
 
-        BARE_REPO_PATH="$VM_DIR/.openclaw.git"
+        # Check if .openclaw is a git repo
+        if [ ! -d .openclaw/.git ]; then
+            echo "ERROR: .openclaw is not a git repository"
+            echo "Clone it first: git clone ${VM_HOST}:${BARE_REPO_PATH} .openclaw"
+            exit 1
+        fi
 
-        case "$SYNC_MODE" in
-            push)
-                echo "Syncing local .openclaw -> VM..."
-                echo ""
+        # Push existing local commits to VM bare repo
+        cd .openclaw
+        git push origin HEAD
+        cd "$PROJECT_ROOT"
+        echo "Pushed to VM"
 
-                # Check if .openclaw is a git repo
-                if [ ! -d .openclaw/.git ]; then
-                    echo "ERROR: .openclaw is not a git repository"
-                    echo "Clone it first: git clone ${VM_HOST}:${BARE_REPO_PATH} .openclaw"
-                    exit 1
-                fi
+        # Update working copy on VM
+        echo "Updating VM working copy..."
+        ssh "$VM_HOST" "cd $VM_DIR/.openclaw && git pull"
 
-                # Commit local changes
-                cd .openclaw
-                if [ -n "$(git status --porcelain)" ]; then
-                    git add -A
-                    git commit -m "Local changes $(date +%Y%m%d-%H%M%S)"
-                    echo "Committed local changes"
-                else
-                    echo "No local changes to commit"
-                fi
+        # Workspace
+        echo ""
+        echo "=== .openclaw/workspace ==="
 
-                # Push to VM bare repo
-                git push origin HEAD
-                echo "Pushed to VM"
+        if [ -d .openclaw/workspace/.git ]; then
+            cd .openclaw/workspace
+            git push origin HEAD 2>/dev/null || echo "No GitHub remote or nothing to push"
+            cd "$PROJECT_ROOT"
+            echo "Pushed to GitHub"
 
-                # Update working copy on VM
-                echo "Updating VM working copy..."
-                ssh "$VM_HOST" "cd $VM_DIR/.openclaw && git pull"
+            echo "Pulling workspace on VM from GitHub..."
+            ssh "$VM_HOST" "cd $VM_DIR/.openclaw/workspace && git pull origin HEAD 2>/dev/null || echo 'No workspace repo on VM'"
+        else
+            echo "No local workspace git repo found, skipping"
+        fi
 
-                cd "$PROJECT_ROOT"
-                echo ""
-                echo "Sync push complete"
-                ;;
+        echo ""
+        echo "Push complete"
+        ;;
 
-            pull)
-                echo "Syncing VM .openclaw -> local..."
-                echo ""
+    pull)
+        echo "=== .openclaw ==="
 
-                # Commit and push on VM
-                echo "Committing VM changes..."
-                ssh "$VM_HOST" "cd $VM_DIR/.openclaw && git add -A && git diff --cached --quiet || git commit -m 'VM changes $(date +%Y%m%d-%H%M%S)' && git push origin HEAD"
+        # Commit and push on VM
+        echo "Committing VM changes..."
+        ssh "$VM_HOST" "cd $VM_DIR/.openclaw && git add -A && (git diff --cached --quiet || git commit -m 'VM changes $(date +%Y%m%d-%H%M%S)') && git push origin HEAD"
 
-                # Pull locally
-                if [ ! -d .openclaw/.git ]; then
-                    echo "ERROR: .openclaw is not a git repository"
-                    echo "Clone it first: git clone ${VM_HOST}:${BARE_REPO_PATH} .openclaw"
-                    exit 1
-                fi
+        # Pull locally
+        if [ ! -d .openclaw/.git ]; then
+            echo "ERROR: .openclaw is not a git repository"
+            echo "Clone it first: git clone ${VM_HOST}:${BARE_REPO_PATH} .openclaw"
+            exit 1
+        fi
 
-                cd .openclaw
-                git pull origin
-                cd "$PROJECT_ROOT"
+        cd .openclaw
+        git pull origin
+        cd "$PROJECT_ROOT"
 
-                echo ""
-                echo "Sync pull complete"
-                ;;
+        # Workspace
+        echo ""
+        echo "=== .openclaw/workspace ==="
 
-            workspace)
-                echo "Syncing workspace via GitHub..."
-                echo ""
+        if [ -d .openclaw/workspace/.git ]; then
+            echo "Committing VM workspace changes..."
+            ssh "$VM_HOST" "cd $VM_DIR/.openclaw/workspace && git add -A && (git diff --cached --quiet || git commit -m 'VM workspace changes $(date +%Y%m%d-%H%M%S)') && git push origin HEAD 2>/dev/null || echo 'No workspace repo on VM'"
 
-                # Push local workspace to GitHub
-                if [ -d .openclaw/workspace/.git ]; then
-                    cd .openclaw/workspace
-                    if [ -n "$(git status --porcelain)" ]; then
-                        git add -A
-                        git commit -m "Workspace update $(date +%Y%m%d-%H%M%S)"
-                    fi
-                    git push origin main 2>/dev/null || echo "No GitHub remote or nothing to push"
-                    cd "$PROJECT_ROOT"
-                    echo "Local workspace pushed to GitHub"
-                else
-                    echo "No local workspace git repo found, skipping local push"
-                fi
+            cd .openclaw/workspace
+            git pull origin 2>/dev/null || echo "No GitHub remote or nothing to pull"
+            cd "$PROJECT_ROOT"
+        else
+            echo "No local workspace git repo found, skipping"
+        fi
 
-                # Pull on VM from GitHub
-                echo "Pulling workspace on VM from GitHub..."
-                ssh "$VM_HOST" "cd $VM_DIR/.openclaw/workspace && git pull origin main 2>/dev/null || echo 'No GitHub remote configured on VM'"
-
-                echo ""
-                echo "Workspace sync complete"
-                ;;
-
-            *)
-                echo "Usage: $0 sync <mode>"
-                echo ""
-                echo "Modes:"
-                echo "  push       - Commit and push local .openclaw changes to VM"
-                echo "  pull       - Commit VM .openclaw changes and pull locally"
-                echo "  workspace  - Sync workspace via GitHub (push local, pull on VM)"
-                echo ""
-                exit 1
-                ;;
-        esac
+        echo ""
+        echo "Pull complete"
         ;;
 
     *)
@@ -226,7 +200,8 @@ case "$MODE" in
         echo "  restart       - Restart gateway container"
         echo "  stop          - Stop gateway container"
         echo "  start         - Start gateway container"
-        echo "  sync          - Git-based sync (push/pull/workspace)"
+        echo "  push          - Push .openclaw and workspace to VM"
+        echo "  pull          - Pull .openclaw and workspace from VM"
         echo ""
         echo "Examples:"
         echo "  $0                                           # Open SSH shell to VM"
@@ -235,9 +210,8 @@ case "$MODE" in
         echo "  $0 status                                    # Check service status"
         echo "  $0 logs                                      # Watch logs"
         echo "  $0 cli gateway status                        # Run CLI command"
-        echo "  $0 sync push                                 # Push local changes to VM"
-        echo "  $0 sync pull                                 # Pull VM changes locally"
-        echo "  $0 sync workspace                            # Sync workspace via GitHub"
+        echo "  $0 push                                      # Push local changes to VM"
+        echo "  $0 pull                                      # Pull VM changes locally"
         echo ""
         exit 1
         ;;
