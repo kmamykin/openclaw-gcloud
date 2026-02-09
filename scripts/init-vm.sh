@@ -106,6 +106,10 @@ fi
 # Add user to docker group
 sudo usermod -aG docker "$GCP_VM_USER"
 
+# Configure git identity for VM commits
+sudo -u "$GCP_VM_USER" git config --global user.email 'kmamykin@gmail.com'
+sudo -u "$GCP_VM_USER" git config --global user.name 'Kliment Mamykin'
+
 # Create OpenClaw directories (new layout)
 echo "Creating OpenClaw directories..."
 sudo -u "$GCP_VM_USER" mkdir -p "/home/$GCP_VM_USER/openclaw"
@@ -145,16 +149,6 @@ sudo -u "$GCP_VM_USER" bash -c "
     fi
 "
 
-# Set up post-receive hook
-echo "Setting up post-receive hook..."
-sudo -u "$GCP_VM_USER" bash -c "
-    mkdir -p /home/$GCP_VM_USER/openclaw/.openclaw.git/hooks
-    cat > /home/$GCP_VM_USER/openclaw/.openclaw.git/hooks/post-receive <<'HOOKEOF'
-#!/bin/bash
-GIT_WORK_TREE=/home/${GCP_VM_USER}/openclaw/.openclaw git checkout -f
-HOOKEOF
-    chmod +x /home/$GCP_VM_USER/openclaw/.openclaw.git/hooks/post-receive
-"
 
 # Configure Docker authentication to Artifact Registry
 REGISTRY_HOST="${GCP_REGION}-docker.pkg.dev"
@@ -184,7 +178,7 @@ echo "- Docker and git installed"
 echo "- User '$GCP_VM_USER' created"
 echo "- OpenClaw directories created (new layout)"
 echo "- .openclaw git repo initialized"
-echo "- Bare repo + post-receive hook set up"
+echo "- Bare repo set up"
 echo "- Docker authenticated to Artifact Registry"
 echo ""
 echo "Next steps:"
