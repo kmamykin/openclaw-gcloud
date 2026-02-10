@@ -13,6 +13,7 @@ services:
       - NODE_OPTIONS=--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE}
     volumes:
       - /home/${GCP_VM_USER}/openclaw/.openclaw:/home/node/.openclaw
+${WORKSPACE_VOLUMES}
     deploy:
       resources:
         limits:
@@ -46,6 +47,7 @@ services:
       - BROWSER=echo
     volumes:
       - /home/${GCP_VM_USER}/openclaw/.openclaw:/home/node/.openclaw
+${WORKSPACE_VOLUMES}
     stdin_open: true
     tty: true
     init: true

@@ -14,6 +14,7 @@ services:
       - OPENCLAW_GATEWAY_BIND=lan
     volumes:
       - ./.openclaw:/home/node/.openclaw
+${WORKSPACE_VOLUMES}
     init: true
     command:
       [
@@ -39,6 +40,7 @@ services:
       - BROWSER=echo
     volumes:
       - ./.openclaw:/home/node/.openclaw
+${WORKSPACE_VOLUMES}
     stdin_open: true
     tty: true
     init: true

@@ -17,7 +17,7 @@ openclaw-gcloud/
 ├── docker/
 │   ├── Dockerfile              # Cloud-extended image (adds tools to base openclaw)
 │   ├── docker-compose.yml.tpl  # Template for VM docker-compose.yml
-│   ├── docker-compose.local.yml # Local Docker execution config
+│   ├── docker-compose.local.yml.tpl # Template for local docker-compose.yml
 │   ├── openclaw-wrapper.sh     # OpenClaw CLI wrapper for container
 │   └── .bashrc                 # Container bash configuration
 ├── .openclaw/                  # Separate git repo (synced to VM, gitignored by parent)
@@ -26,9 +26,9 @@ openclaw-gcloud/
 │   ├── .config/gogcli/         # OAuth tokens (moved from .config/gogcli/)
 │   ├── openclaw.json           # OpenClaw config
 │   ├── credentials/            # Model credentials
-│   ├── workspace-*/             # Separate git repos (GitHub remotes)
 │   ├── sessions/               # Ephemeral (gitignored)
 │   └── .gitignore
+├── workspace-*/                # Separate git repos (GitHub remotes, gitignored)
 ├── openclaw/                   # Official OpenClaw repository (optional, gitignored)
 └── scripts/
     ├── setup.sh                # One-time GCP infrastructure setup
@@ -241,7 +241,7 @@ Runs OAuth flow locally, saves credentials to `.openclaw/.config/gogcli/`.
 | Model credentials | `.openclaw/credentials/` | git (local <-> VM) |
 | gogcli OAuth tokens | `.openclaw/.config/gogcli/` | git (local <-> VM) |
 | Secrets (.env) | `.openclaw/.env` | git (local <-> VM) |
-| Agent workspaces | `.openclaw/workspace-*/` | git via GitHub |
+| Agent workspaces | `workspace-*/` | git via GitHub |
 | Channel sessions | `.openclaw/sessions/` | ephemeral (gitignored) |
 | Docker images | VM boot disk / local | Artifact Registry |
 
@@ -255,9 +255,9 @@ Runs OAuth flow locally, saves credentials to `.openclaw/.config/gogcli/`.
 │   ├── .config/gogcli/         # OAuth tokens
 │   ├── openclaw.json           # Config
 │   ├── credentials/            # Model creds
-│   ├── workspace-*/             # Separate git repos (GitHub remotes)
 │   ├── sessions/               # Ephemeral (gitignored)
 │   └── .gitignore
+├── workspace-*/                # Separate git repos (GitHub remotes)
 ├── docker-compose.yml          # Generated from template
 └── .env                        # GCP infrastructure vars
 ```

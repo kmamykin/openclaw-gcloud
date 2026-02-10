@@ -64,6 +64,16 @@ if ! gcloud compute instances describe "$VM_NAME" --zone="$GCP_ZONE" &>/dev/null
     exit 1
 fi
 
+# Build workspace volume mounts from workspace-* dirs at project root
+WORKSPACE_VOLUMES=""
+for ws_dir in workspace-*/; do
+    [ -d "$ws_dir" ] || continue
+    ws_name="$(basename "$ws_dir")"
+    WORKSPACE_VOLUMES="${WORKSPACE_VOLUMES}      - /home/${GCP_VM_USER}/openclaw/${ws_name}:/home/node/.openclaw/${ws_name}
+"
+done
+export WORKSPACE_VOLUMES
+
 # Create docker-compose.yml from template
 envsubst < docker/docker-compose.yml.tpl > /tmp/docker-compose.yml
 
