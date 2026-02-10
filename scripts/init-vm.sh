@@ -133,6 +133,10 @@ ALIASES
     echo "Added shell aliases to $VM_BASHRC"
 fi
 
+# Add GitHub SSH host key so workspace clones over SSH work
+echo "Adding GitHub SSH host key..."
+sudo -u "$GCP_VM_USER" bash -c "mkdir -p ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null"
+
 # Create OpenClaw base directory
 echo "Creating OpenClaw directories..."
 sudo -u "$GCP_VM_USER" mkdir -p "/home/$GCP_VM_USER/openclaw"
