@@ -121,6 +121,18 @@ sudo usermod -aG docker "$GCP_VM_USER"
 sudo -u "$GCP_VM_USER" git config --global user.email 'kmamykin@gmail.com'
 sudo -u "$GCP_VM_USER" git config --global user.name 'Kliment Mamykin'
 
+# Add shell aliases to VM user's .bashrc (idempotent)
+VM_BASHRC="/home/$GCP_VM_USER/.bashrc"
+if ! grep -q "alias ll=" "$VM_BASHRC" 2>/dev/null; then
+    cat <<'ALIASES' | sudo -u "$GCP_VM_USER" tee -a "$VM_BASHRC" > /dev/null
+
+# Useful aliases
+alias ll='ls -lah'
+alias la='ls -A'
+ALIASES
+    echo "Added shell aliases to $VM_BASHRC"
+fi
+
 # Create OpenClaw base directory
 echo "Creating OpenClaw directories..."
 sudo -u "$GCP_VM_USER" mkdir -p "/home/$GCP_VM_USER/openclaw"
