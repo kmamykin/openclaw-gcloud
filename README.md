@@ -33,7 +33,7 @@ openclaw-gcloud/
 └── scripts/
     ├── setup.sh                # One-time GCP infrastructure setup
     ├── init-vm.sh              # One-time VM initialization
-    ├── build.sh                # Build Docker images (--local for native arch)
+    ├── build.sh                # Build Docker image (amd64, --push for registry)
     ├── deploy.sh               # Deploy/update container on VM
     ├── openclaw.sh             # VM management (shell, forward, logs, cli, sync)
     ├── local.sh                # Local Docker execution (start, stop, logs, build)
@@ -94,9 +94,9 @@ Both modes use identical Docker images and mount `.openclaw/` the same way.
 1. **ghcr.io/openclaw/openclaw** (Base Image) - Pre-built official image pulled from GitHub Container Registry. Version controlled via `OPENCLAW_VERSION` in `.env` (defaults to `latest`).
 2. **openclaw-cloud:latest** (Cloud-Extended Image) - Extends base with gog CLI, gh CLI, uv, ffmpeg, vim, Gemini CLI
 
-**Multi-arch support**:
-- `./scripts/build.sh` - Pulls base image, builds cloud image for linux/amd64, pushes to registry
-- `./scripts/build.sh --local` - Pulls base image, builds cloud image for native platform (arm64 on Mac), no push
+**Single-arch (amd64)**:
+- `./scripts/build.sh` - Builds cloud image for linux/amd64 (runs via Rosetta on Mac)
+- `./scripts/build.sh --push` - Builds + pushes to Artifact Registry
 
 ### Infrastructure Components
 
@@ -140,8 +140,8 @@ cp .openclaw/.env.example .openclaw/.env
 ### Local Development
 
 ```bash
-# Build image for local architecture
-./scripts/build.sh --local
+# Build image (amd64, runs via Rosetta on Mac)
+./scripts/build.sh
 
 # Start locally
 ./scripts/local.sh start
@@ -187,8 +187,8 @@ Runs on VM: installs Docker + git, creates directories, initializes .openclaw gi
 
 ### `./scripts/build.sh` - Build Cloud Image
 - Pulls pre-built base image from ghcr.io/openclaw/openclaw (version from `OPENCLAW_VERSION`)
-- Default: builds cloud image for linux/amd64 + pushes to Artifact Registry
-- `--local`: builds cloud image for native platform (arm64 on Mac), no push
+- Always builds for linux/amd64 (runs via Rosetta on Mac)
+- `--push`: also pushes to Artifact Registry
 
 ### `./scripts/deploy.sh` - Deploy to VM
 - `--build`: build images first

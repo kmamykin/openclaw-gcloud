@@ -41,7 +41,7 @@ done
 # Optionally build new images
 if [ $BUILD_FIRST -eq 1 ]; then
     echo "Building new images first..."
-    "${SCRIPT_DIR}/build.sh"
+    "${SCRIPT_DIR}/build.sh" --push
     echo ""
 fi
 

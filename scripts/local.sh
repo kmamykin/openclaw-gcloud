@@ -117,7 +117,7 @@ case "$ACTION" in
 
     build)
         echo "Building local OpenClaw image..."
-        "${SCRIPT_DIR}/build.sh" --local
+        "${SCRIPT_DIR}/build.sh"
         ;;
 
     *)
@@ -131,7 +131,7 @@ case "$ACTION" in
         echo "  cli      - Run OpenClaw CLI commands"
         echo "  restart  - Restart gateway container"
         echo "  status   - Show container status (default)"
-        echo "  build    - Build local Docker image (arm64 on Mac)"
+        echo "  build    - Build Docker image (amd64, runs via Rosetta on Mac)"
         echo ""
         echo "Examples:"
         echo "  $0 start                      # Start gateway"
