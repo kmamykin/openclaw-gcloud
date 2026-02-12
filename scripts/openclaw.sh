@@ -194,7 +194,7 @@ case "$MODE" in
             echo "=== $ws_name ==="
 
             echo "Committing VM $ws_name changes..."
-            ssh "$VM_HOST" "cd $VM_DIR/$ws_name && git add -A && (git diff --cached --quiet || git commit -m 'VM $ws_name changes \$(date +%Y%m%d-%H%M%S)') && git push origin HEAD 2>/dev/null || echo 'No $ws_name repo on VM'"
+            ssh "$VM_HOST" "cd $VM_DIR/$ws_name && git add -A && (git diff --cached --quiet || git commit -m 'VM $ws_name changes $(date +%Y%m%d-%H%M%S)') && git push origin HEAD 2>/dev/null || echo 'No $ws_name repo on VM'"
 
             cd "$ws_dir"
             git pull origin 2>/dev/null || echo "No GitHub remote or nothing to pull"
