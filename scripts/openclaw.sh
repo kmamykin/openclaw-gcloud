@@ -2,7 +2,7 @@
 set -e
 
 # SSH helper script for OpenClaw Compute Engine instance
-# Supports: vm-shell, port-forward, shell, logs, cli, status, ps, restart, stop, start, push, pull
+# Supports: vm-shell, port-forward, shell, tui, logs, cli, status, ps, restart, stop, start, push, pull
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -85,6 +85,12 @@ case "$MODE" in
         echo "Opening bash shell in openclaw-gateway container..."
         echo ""
         ssh -t "$VM_HOST" "cd $VM_DIR && docker compose exec -it openclaw-gateway bash"
+        ;;
+
+    tui)
+        echo "Opening OpenClaw TUI..."
+        echo ""
+        ssh -t "$VM_HOST" "cd $VM_DIR && docker compose exec -it openclaw-gateway openclaw tui"
         ;;
 
     ps)
@@ -206,6 +212,7 @@ case "$MODE" in
         echo "  vm-shell      - Open interactive SSH shell to VM with port forwarding (default)"
         echo "  port-forward  - Start port forwarding for gateway (keeps tunnel open)"
         echo "  shell         - Open bash shell in openclaw-gateway container"
+        echo "  tui           - Open OpenClaw TUI in container"
         echo "  status        - Show container status"
         echo "  logs          - Stream container logs"
         echo "  cli           - Run OpenClaw CLI commands"
@@ -220,6 +227,7 @@ case "$MODE" in
         echo "  $0                                           # Open SSH shell to VM"
         echo "  $0 port-forward                              # Forward gateway port"
         echo "  $0 shell                                     # Open bash in container"
+        echo "  $0 tui                                       # Open OpenClaw TUI"
         echo "  $0 status                                    # Check service status"
         echo "  $0 logs                                      # Watch logs"
         echo "  $0 cli gateway status                        # Run CLI command"
