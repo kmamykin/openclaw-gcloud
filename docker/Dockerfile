@@ -1,9 +1,8 @@
 # Cloud-extended OpenClaw image
 # Extends the base openclaw image with cloud-specific tools
 
-# Use pre-built OpenClaw image from ghcr.io, version controlled via OPENCLAW_VERSION
-ARG OPENCLAW_VERSION=latest
-ARG BASE_IMAGE=ghcr.io/openclaw/openclaw:${OPENCLAW_VERSION}
+# Base image passed from build.sh (version controlled there)
+ARG BASE_IMAGE=ghcr.io/openclaw/openclaw:latest
 FROM ${BASE_IMAGE}
 
 # Switch to root to install binaries

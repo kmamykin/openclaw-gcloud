@@ -91,7 +91,7 @@ Both modes use identical Docker images and mount `.openclaw/` the same way.
 
 **Base + Cloud Extension**:
 
-1. **ghcr.io/openclaw/openclaw** (Base Image) - Pre-built official image pulled from GitHub Container Registry. Version controlled via `OPENCLAW_VERSION` in `.env` (defaults to `latest`).
+1. **ghcr.io/openclaw/openclaw** (Base Image) - Pre-built official image pulled from GitHub Container Registry. Version controlled via `OPENCLAW_VERSION` in `scripts/build.sh`.
 2. **openclaw-cloud:latest** (Cloud-Extended Image) - Extends base with gog CLI, gh CLI, uv, ffmpeg, vim, Gemini CLI
 
 **Single-arch (amd64)**:
@@ -186,7 +186,7 @@ One-time GCP setup: APIs, Artifact Registry, VM, Cloud NAT, IAP firewall, snapsh
 Runs on VM: installs Docker + git, creates directories, initializes .openclaw git repo + bare repo, configures Docker auth.
 
 ### `./scripts/build.sh` - Build Cloud Image
-- Pulls pre-built base image from ghcr.io/openclaw/openclaw (version from `OPENCLAW_VERSION`)
+- Pulls pre-built base image from ghcr.io/openclaw/openclaw (version from `OPENCLAW_VERSION` in build.sh)
 - Always builds for linux/amd64 (runs via Rosetta on Mac)
 - `--push`: also pushes to Artifact Registry
 

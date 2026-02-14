@@ -36,8 +36,8 @@ if [ $PUSH -eq 1 ]; then
     IMAGE_TAG=$(date +%Y%m%d-%H%M%S)
 fi
 
-# Compute base image from OPENCLAW_VERSION
-OPENCLAW_VERSION="${OPENCLAW_VERSION:-latest}"
+# OpenClaw base image version (source-controlled)
+OPENCLAW_VERSION="2026.2.13"
 BASE_IMAGE="ghcr.io/openclaw/openclaw:${OPENCLAW_VERSION}"
 
 echo ""
