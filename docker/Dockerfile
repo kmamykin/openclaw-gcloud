@@ -38,7 +38,7 @@ COPY openclaw-wrapper.sh /usr/local/bin/openclaw
 RUN chmod +x /usr/local/bin/openclaw
 
 # Install Google Gemini CLI globally (as root)
-RUN npm install -g @google/gemini-cli
+RUN npm install -g @google/gemini-cli @steipete/summarize pdfkit
 
 # Switch back to non-root user
 USER node
