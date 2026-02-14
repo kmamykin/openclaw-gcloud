@@ -37,8 +37,14 @@ RUN apt-get update && apt-get install -y curl vim ffmpeg gnupg \
 COPY openclaw-wrapper.sh /usr/local/bin/openclaw
 RUN chmod +x /usr/local/bin/openclaw
 
-# Install Google Gemini CLI globally (as root)
-RUN npm install -g @google/gemini-cli @steipete/summarize pdfkit
+# Install Google Gemini CLI, Playwright, and Playwright CLI globally (as root)
+RUN npm install -g @google/gemini-cli @steipete/summarize pdfkit playwright @playwright/cli
+
+# Install Playwright Chromium browser and its system dependencies (baked into image)
+RUN npx playwright install --with-deps chromium
+
+# Install Playwright CLI skills (for Claude Code skill discovery)
+RUN playwright-cli install --skills
 
 # Switch back to non-root user
 USER node
