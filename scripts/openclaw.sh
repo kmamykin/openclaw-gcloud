@@ -135,37 +135,30 @@ case "$MODE" in
         echo "Updating VM working copy..."
         ssh "$VM_HOST" "cd $VM_DIR/.openclaw && git pull"
 
-        # Workspaces (now siblings of .openclaw at project root)
-        # Workspaces managed by the container itself (cloned via GH_TOKEN at runtime)
-        SKIP_WORKSPACES="workspace-layuplab"
-        for ws_dir in workspace-*/; do
-            [ -d "$ws_dir/.git" ] || continue
-            ws_name="$(basename "$ws_dir")"
-            echo "$SKIP_WORKSPACES" | grep -qw "$ws_name" && { echo ""; echo "=== $ws_name (skipped - container-managed) ==="; continue; }
-            echo ""
-            echo "=== $ws_name ==="
+        # Workspaces (single git repo synced via GitHub)
+        echo ""
+        echo "=== workspaces ==="
 
-            # Get GitHub URL for cloning on VM if needed
-            github_url="$(cd "$ws_dir" && git remote get-url origin 2>/dev/null)"
+        if [ ! -d workspaces/.git ]; then
+            echo "ERROR: workspaces is not a git repository"
+            exit 1
+        fi
 
-            cd "$ws_dir"
-            git push origin HEAD 2>/dev/null || echo "No GitHub remote or nothing to push"
-            cd "$PROJECT_ROOT"
-            echo "Pushed to GitHub"
+        cd workspaces
+        git push origin HEAD 2>/dev/null || echo "Nothing to push to GitHub"
+        cd "$PROJECT_ROOT"
+        echo "Pushed to GitHub"
 
-            echo "Syncing $ws_name on VM..."
-            ssh "$VM_HOST" "
-                WS_DIR=$VM_DIR/$ws_name
-                if [ -d \$WS_DIR/.git ]; then
-                    cd \$WS_DIR && git pull origin HEAD
-                elif [ -n '$github_url' ]; then
-                    echo 'Cloning $ws_name on VM from GitHub...'
-                    git clone $github_url \$WS_DIR
-                else
-                    echo 'ERROR: No GitHub URL for $ws_name'
-                fi
-            "
-        done
+        echo "Syncing workspaces on VM..."
+        ssh "$VM_HOST" "
+            WS_DIR=$VM_DIR/workspaces
+            if [ -d \$WS_DIR/.git ]; then
+                cd \$WS_DIR && git pull origin HEAD
+            else
+                echo 'Cloning workspaces on VM from GitHub...'
+                git clone git@github.com:kmamykin/openclaw-workspaces.git \$WS_DIR
+            fi
+        "
 
         echo ""
         echo "Push complete"
@@ -189,23 +182,21 @@ case "$MODE" in
         git pull origin
         cd "$PROJECT_ROOT"
 
-        # Workspaces (now siblings of .openclaw at project root)
-        # Workspaces managed by the container itself (cloned via GH_TOKEN at runtime)
-        SKIP_WORKSPACES="workspace-layuplab"
-        for ws_dir in workspace-*/; do
-            [ -d "$ws_dir/.git" ] || continue
-            ws_name="$(basename "$ws_dir")"
-            echo "$SKIP_WORKSPACES" | grep -qw "$ws_name" && { echo ""; echo "=== $ws_name (skipped - container-managed) ==="; continue; }
-            echo ""
-            echo "=== $ws_name ==="
+        # Workspaces (single git repo synced via GitHub)
+        echo ""
+        echo "=== workspaces ==="
 
-            echo "Committing VM $ws_name changes..."
-            ssh "$VM_HOST" "cd $VM_DIR/$ws_name && git add -A && (git diff --cached --quiet || git commit -m 'VM $ws_name changes $(date +%Y%m%d-%H%M%S)') && git push origin HEAD 2>/dev/null || echo 'No $ws_name repo on VM'"
+        echo "Committing VM workspaces changes..."
+        ssh "$VM_HOST" "cd $VM_DIR/workspaces && git add -A && (git diff --cached --quiet || git commit -m 'VM workspaces changes $(date +%Y%m%d-%H%M%S)') && git push origin HEAD 2>/dev/null || echo 'No workspaces repo on VM'"
 
-            cd "$ws_dir"
-            git pull origin 2>/dev/null || echo "No GitHub remote or nothing to pull"
-            cd "$PROJECT_ROOT"
-        done
+        if [ ! -d workspaces/.git ]; then
+            echo "ERROR: workspaces is not a git repository"
+            exit 1
+        fi
+
+        cd workspaces
+        git pull origin 2>/dev/null || echo "Nothing to pull from GitHub"
+        cd "$PROJECT_ROOT"
 
         echo ""
         echo "Pull complete"

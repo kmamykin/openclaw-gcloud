@@ -6,8 +6,8 @@ client_secret_*.json
 # .openclaw is a separate git repo (synced via git, not tracked by parent)
 /.openclaw/
 
-# Workspaces are separate git repos (synced via GitHub)
-/workspace-*/
+# Workspaces git repo (synced via GitHub)
+/workspaces/
 
 # gogcli authentication files (now in .openclaw/.config/gogcli/)
 /.config/

@@ -28,7 +28,7 @@ openclaw-gcloud/
 │   ├── credentials/            # Model credentials
 │   ├── sessions/               # Ephemeral (gitignored)
 │   └── .gitignore
-├── workspace-*/                # Separate git repos (GitHub remotes, gitignored)
+├── workspaces/                 # Single git repo with workspace subfolders (GitHub, gitignored)
 ├── openclaw/                   # Official OpenClaw repository (optional, gitignored)
 └── scripts/
     ├── setup.sh                # One-time GCP infrastructure setup
@@ -79,13 +79,13 @@ Both modes use identical Docker images and mount `.openclaw/` the same way.
         │                                             │
         ▼                                             ▼
 ┌──────────────────┐                          ┌──────────────────┐
-│ workspace-*/     │      git push/pull       │ workspace-*/     │
-│  (git repos)     │ ◄──────────────────────► │  (git repos)     │
+│ workspaces/      │      git push/pull       │ workspaces/      │
+│  (single repo)   │ ◄──────────────────────► │  (single repo)   │
 └──────────────────┘    (via GitHub)          └──────────────────┘
 ```
 
 - `.openclaw/` syncs directly between local and VM via git (never touches GitHub)
-- `workspace-*/` dirs sync via GitHub as a backup and sharing mechanism
+- `workspaces/` syncs via GitHub as a single git repo
 
 ### Docker Image Strategy
 
@@ -241,7 +241,7 @@ Runs OAuth flow locally, saves credentials to `.openclaw/.config/gogcli/`.
 | Model credentials | `.openclaw/credentials/` | git (local <-> VM) |
 | gogcli OAuth tokens | `.openclaw/.config/gogcli/` | git (local <-> VM) |
 | Secrets (.env) | `.openclaw/.env` | git (local <-> VM) |
-| Agent workspaces | `workspace-*/` | git via GitHub |
+| Agent workspaces | `workspaces/` | git via GitHub |
 | Channel sessions | `.openclaw/sessions/` | ephemeral (gitignored) |
 | Docker images | VM boot disk / local | Artifact Registry |
 
@@ -257,7 +257,7 @@ Runs OAuth flow locally, saves credentials to `.openclaw/.config/gogcli/`.
 │   ├── credentials/            # Model creds
 │   ├── sessions/               # Ephemeral (gitignored)
 │   └── .gitignore
-├── workspace-*/                # Separate git repos (GitHub remotes)
+├── workspaces/                 # Single git repo with workspace subfolders (GitHub)
 ├── docker-compose.yml          # Generated from template
 └── .env                        # GCP infrastructure vars
 ```

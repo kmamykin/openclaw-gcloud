@@ -27,16 +27,6 @@ cd "$PROJECT_ROOT"
 # Load environment (only .openclaw/.env needed for local, but load both for consistency)
 load_env || exit 1
 
-# Build workspace volume mounts from workspace-* dirs at project root
-WORKSPACE_VOLUMES=""
-for ws_dir in workspace-*/; do
-    [ -d "$ws_dir" ] || continue
-    ws_name="$(basename "$ws_dir")"
-    WORKSPACE_VOLUMES="${WORKSPACE_VOLUMES}      - ./${ws_name}:/home/node/.openclaw/${ws_name}
-"
-done
-export WORKSPACE_VOLUMES
-
 # Generate compose file from template
 envsubst < docker/docker-compose.local.yml.tpl > /tmp/docker-compose.local.yml
 
