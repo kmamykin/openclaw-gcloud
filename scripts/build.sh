@@ -37,7 +37,7 @@ if [ $PUSH -eq 1 ]; then
 fi
 
 # OpenClaw base image version (source-controlled)
-OPENCLAW_VERSION="2026.2.13"
+OPENCLAW_VERSION="2026.2.15"
 BASE_IMAGE="ghcr.io/openclaw/openclaw:${OPENCLAW_VERSION}"
 
 echo ""
