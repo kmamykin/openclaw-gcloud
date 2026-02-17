@@ -2,7 +2,7 @@
 /data
 .env
 client_secret_*.json
-
+/.bak/
 # .openclaw is a separate git repo (synced via git, not tracked by parent)
 /.openclaw/
 
