@@ -136,9 +136,12 @@ case "$MODE" in
         ssh "$VM_HOST" "cd $VM_DIR/.openclaw && git pull"
 
         # Workspaces (now siblings of .openclaw at project root)
+        # Workspaces managed by the container itself (cloned via GH_TOKEN at runtime)
+        SKIP_WORKSPACES="workspace-layuplab"
         for ws_dir in workspace-*/; do
             [ -d "$ws_dir/.git" ] || continue
             ws_name="$(basename "$ws_dir")"
+            echo "$SKIP_WORKSPACES" | grep -qw "$ws_name" && { echo ""; echo "=== $ws_name (skipped - container-managed) ==="; continue; }
             echo ""
             echo "=== $ws_name ==="
 
@@ -187,9 +190,12 @@ case "$MODE" in
         cd "$PROJECT_ROOT"
 
         # Workspaces (now siblings of .openclaw at project root)
+        # Workspaces managed by the container itself (cloned via GH_TOKEN at runtime)
+        SKIP_WORKSPACES="workspace-layuplab"
         for ws_dir in workspace-*/; do
             [ -d "$ws_dir/.git" ] || continue
             ws_name="$(basename "$ws_dir")"
+            echo "$SKIP_WORKSPACES" | grep -qw "$ws_name" && { echo ""; echo "=== $ws_name (skipped - container-managed) ==="; continue; }
             echo ""
             echo "=== $ws_name ==="
 
