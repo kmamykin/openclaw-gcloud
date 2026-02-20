@@ -59,7 +59,7 @@ Both modes use identical Docker images and mount `.openclaw/` the same way.
 ### Configuration Split
 
 | File | Contains | Tracked by |
-|------|----------|------------|
+| --- | --- | --- |
 | `.env` | GCP infrastructure vars (project, region, VM, registry) | `.gitignore` (not in git) |
 | `.openclaw/.env` | OpenClaw secrets (token, API keys, gogcli password) | `.openclaw` git repo |
 
@@ -101,7 +101,7 @@ Both modes use identical Docker images and mount `.openclaw/` the same way.
 ### Infrastructure Components
 
 | Component | Specification | Purpose |
-|-----------|--------------|---------|
+| --- | --- | --- |
 | **Compute** | GCP Compute Engine e2-medium | 2 vCPU, 4GB RAM for Docker containers |
 | **Boot Disk** | 30GB Debian 12 persistent disk | OS, Docker images, and layers |
 | **Storage** | Docker volumes -> local disk | Persistent OpenClaw data |
@@ -236,7 +236,7 @@ Runs OAuth flow locally, saves credentials to `.openclaw/.config/gogcli/`.
 ## Data Persistence
 
 | Data | Location | Sync Method |
-|------|----------|-------------|
+| --- | --- | --- |
 | OpenClaw config | `.openclaw/openclaw.json` | git (local <-> VM) |
 | Model credentials | `.openclaw/credentials/` | git (local <-> VM) |
 | gogcli OAuth tokens | `.openclaw/.config/gogcli/` | git (local <-> VM) |
@@ -265,13 +265,13 @@ Runs OAuth flow locally, saves credentials to `.openclaw/.config/gogcli/`.
 ## Cost Breakdown
 
 | Component | Monthly Cost |
-|-----------|--------------|
+| --- | --- |
 | e2-medium VM (730 hrs) | ~$24.27 |
 | 30GB persistent disk | ~$1.20 |
 | Artifact Registry (~5GB) | ~$0.50 |
 | Cloud NAT | ~$1-2 |
 | Disk snapshots (~30GB) | ~$0.78 |
-| **Total** | **~$28/month** |
+| **Total** | **\~$28/month** |
 
 ## Security
 
