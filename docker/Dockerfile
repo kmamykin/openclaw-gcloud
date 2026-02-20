@@ -13,8 +13,9 @@ USER root
 ARG GOG_VERSION=0.9.0
 ARG TARGETARCH
 
-# Install basic utilities, ffmpeg, GitHub CLI, gog CLI, and uv
+# Install basic utilities, ffmpeg, CLI tools, GitHub CLI, gog CLI, and uv
 RUN apt-get update && apt-get install -y curl vim ffmpeg gnupg \
+    jq ripgrep fd-find tree bat sqlite3 xmlstarlet pandoc wget jo httpie unzip \
     # Install GitHub CLI (gh)
     && mkdir -p /etc/apt/keyrings \
     && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg -o /etc/apt/keyrings/githubcli-archive-keyring.gpg \
@@ -31,7 +32,10 @@ RUN apt-get update && apt-get install -y curl vim ffmpeg gnupg \
     && curl -LsSf https://astral.sh/uv/install.sh | sh \
     && cp /root/.local/bin/uv /usr/local/bin/ \
     && cp /root/.local/bin/uvx /usr/local/bin/ \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    && apt-get clean && rm -rf /var/lib/apt/lists/* \
+    # Symlink Debian-named binaries to their common names
+    && ln -sf /usr/bin/fdfind /usr/local/bin/fd \
+    && ln -sf /usr/bin/batcat /usr/local/bin/bat
 
 # Add openclaw command wrapper
 COPY openclaw-wrapper.sh /usr/local/bin/openclaw
@@ -45,6 +49,28 @@ RUN npx playwright install --with-deps chromium
 
 # Install Playwright CLI skills (for Claude Code skill discovery)
 RUN playwright-cli install --skills
+
+# Install CLI tools from GitHub releases (yq, gron, xsv, pup)
+ARG GRON_VERSION=0.7.1
+RUN ARCH=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64") \
+    # yq - YAML/TOML/XML/CSV processor
+    && curl -fsSL "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${ARCH}" -o /usr/local/bin/yq \
+    && chmod +x /usr/local/bin/yq \
+    # gron - make JSON greppable
+    && curl -fsSL "https://github.com/tomnomnom/gron/releases/download/v${GRON_VERSION}/gron-linux-${ARCH}-${GRON_VERSION}.tgz" \
+       | tar -xzf - -C /usr/local/bin \
+    && chmod +x /usr/local/bin/gron \
+    # xsv - fast CSV toolkit (amd64 only)
+    && if [ "$ARCH" = "amd64" ]; then \
+         curl -fsSL "https://github.com/BurntSushi/xsv/releases/download/0.13.0/xsv-0.13.0-x86_64-unknown-linux-musl.tar.gz" \
+           | tar -xzf - -C /usr/local/bin; \
+         chmod +x /usr/local/bin/xsv; \
+       fi \
+    # pup - HTML parsing (like jq for HTML)
+    && curl -fsSL "https://github.com/ericchiang/pup/releases/download/v0.4.0/pup_v0.4.0_linux_${ARCH}.zip" -o /tmp/pup.zip \
+    && unzip -o /tmp/pup.zip -d /usr/local/bin \
+    && chmod +x /usr/local/bin/pup \
+    && rm /tmp/pup.zip
 
 # Switch back to non-root user
 USER node
