@@ -15,6 +15,7 @@ services:
     volumes:
       - ./.openclaw:/home/node/.openclaw
       - ./workspaces:/home/node/workspaces
+      - ./tmp/gateway:/tmp
     init: true
     command:
       [
@@ -41,6 +42,7 @@ services:
     volumes:
       - ./.openclaw:/home/node/.openclaw
       - ./workspaces:/home/node/workspaces
+      - ./tmp/cli:/tmp
     stdin_open: true
     tty: true
     init: true
