@@ -15,6 +15,7 @@ services:
       - /home/${GCP_VM_USER}/openclaw/.openclaw:/home/node/.openclaw
       - /home/${GCP_VM_USER}/openclaw/workspaces:/home/node/workspaces
       - /home/${GCP_VM_USER}/openclaw/tmp/gateway:/tmp
+      - /home/${GCP_VM_USER}/openclaw/dot-local/gateway:/home/node/.local
     deploy:
       resources:
         limits:
@@ -50,6 +51,7 @@ services:
       - /home/${GCP_VM_USER}/openclaw/.openclaw:/home/node/.openclaw
       - /home/${GCP_VM_USER}/openclaw/workspaces:/home/node/workspaces
       - /home/${GCP_VM_USER}/openclaw/tmp/cli:/tmp
+      - /home/${GCP_VM_USER}/openclaw/dot-local/cli:/home/node/.local
     stdin_open: true
     tty: true
     init: true

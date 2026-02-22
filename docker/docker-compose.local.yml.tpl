@@ -16,6 +16,7 @@ services:
       - ./.openclaw:/home/node/.openclaw
       - ./workspaces:/home/node/workspaces
       - ./tmp/gateway:/tmp
+      - ./dot-local/gateway:/home/node/.local
     init: true
     command:
       [
@@ -43,6 +44,7 @@ services:
       - ./.openclaw:/home/node/.openclaw
       - ./workspaces:/home/node/workspaces
       - ./tmp/cli:/tmp
+      - ./dot-local/cli:/home/node/.local
     stdin_open: true
     tty: true
     init: true
