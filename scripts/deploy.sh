@@ -87,6 +87,9 @@ set -a
 [ -f .openclaw/.env ] && source .openclaw/.env
 set +a
 
+# Ensure tmp dirs exist with correct ownership before docker compose creates them as root
+sudo install -d -o ${GCP_VM_USER} -g ${GCP_VM_USER} tmp tmp/gateway tmp/cli
+
 docker compose pull openclaw-gateway
 
 docker compose down || true
