@@ -24,7 +24,7 @@ require_vars VM_NAME GCP_ZONE || exit 1
 
 ensure_ssh_config
 
-MODE="${1:-vm-shell}"
+MODE="${1:-help}"
 shift || true  # Remove first argument, keep rest for cli commands
 
 case "$MODE" in
