@@ -187,7 +187,16 @@ case "$MODE" in
         echo "=== workspaces ==="
 
         echo "Committing VM workspaces changes..."
-        ssh "$VM_HOST" "cd $VM_DIR/workspaces && git add -A && (git diff --cached --quiet || git commit -m 'VM workspaces changes $(date +%Y%m%d-%H%M%S)') && git push origin HEAD 2>/dev/null || echo 'No workspaces repo on VM'"
+        ssh "$VM_HOST" "
+            WS_DIR=$VM_DIR/workspaces
+            if [ ! -d \"\$WS_DIR/.git\" ]; then
+                echo 'No workspaces repo on VM'
+            else
+                cd \"\$WS_DIR\"
+                rm -f .git/index.lock
+                git add -A && (git diff --cached --quiet || git commit -m 'VM workspaces changes \$(date +%Y%m%d-%H%M%S)') && git push origin HEAD 2>/dev/null || true
+            fi
+        "
 
         if [ ! -d workspaces/.git ]; then
             echo "ERROR: workspaces is not a git repository"
