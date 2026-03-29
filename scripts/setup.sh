@@ -45,8 +45,8 @@ gcloud services enable iap.googleapis.com --quiet
 gcloud services enable monitoring.googleapis.com --quiet
 gcloud services enable logging.googleapis.com --quiet
 
-# Enable Google Workspace APIs for gogcli
-echo "Enabling Google Workspace APIs for gogcli..."
+# Enable Google Workspace APIs for gws CLI
+echo "Enabling Google Workspace APIs for gws CLI..."
 gcloud services enable gmail.googleapis.com --quiet
 gcloud services enable calendar-json.googleapis.com --quiet
 gcloud services enable chat.googleapis.com --quiet

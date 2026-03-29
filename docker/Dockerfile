@@ -8,12 +8,9 @@ FROM ${BASE_IMAGE}
 # Switch to root to install binaries
 USER root
 
-# Download and install gog (gogcli) from GitHub releases
-# Note: wacli has no Linux builds, only macOS
-ARG GOG_VERSION=0.9.0
 ARG TARGETARCH
 
-# Install basic utilities, ffmpeg, CLI tools, GitHub CLI, gog CLI, and uv
+# Install basic utilities, ffmpeg, CLI tools, GitHub CLI, and uv
 RUN apt-get update && apt-get install -y curl vim ffmpeg gnupg \
     jq ripgrep fd-find tree bat sqlite3 xmlstarlet pandoc wget jo httpie unzip \
     # Install GitHub CLI (gh)
@@ -23,11 +20,6 @@ RUN apt-get update && apt-get install -y curl vim ffmpeg gnupg \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" > /etc/apt/sources.list.d/github-cli.list \
     && apt-get update \
     && apt-get install -y gh \
-    # Install gog CLI
-    && ARCH=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64") \
-    && curl -fsSL "https://github.com/steipete/gogcli/releases/download/v${GOG_VERSION}/gogcli_${GOG_VERSION}_linux_${ARCH}.tar.gz" \
-       | tar -xzf - -C /usr/local/bin gog \
-    && chmod +x /usr/local/bin/gog \
     # Install uv (fast Python package installer)
     && curl -LsSf https://astral.sh/uv/install.sh | sh \
     && cp /root/.local/bin/uv /usr/local/bin/ \
@@ -41,14 +33,18 @@ RUN apt-get update && apt-get install -y curl vim ffmpeg gnupg \
 COPY openclaw-wrapper.sh /usr/local/bin/openclaw
 RUN chmod +x /usr/local/bin/openclaw
 
-# Install Google Gemini CLI, Playwright, and Playwright CLI globally (as root)
-RUN npm install -g @google/gemini-cli @steipete/summarize pdfkit playwright @playwright/cli
+# Install Google Gemini CLI, Google Workspace CLI, Playwright, and Playwright CLI globally (as root)
+RUN npm install -g @google/gemini-cli @googleworkspace/cli @steipete/summarize pdfkit playwright @playwright/cli
 
 # Install Playwright Chromium browser and its system dependencies (baked into image)
 RUN npx playwright install --with-deps chromium
 
 # Install Playwright CLI skills (for Claude Code skill discovery)
 RUN playwright-cli install --skills
+
+# Install Google Workspace CLI agent skills
+RUN mkdir -p /opt/skills/gws-skills && \
+    npx skills add https://github.com/googleworkspace/cli --dir /opt/skills/gws-skills -y
 
 # Install CLI tools from GitHub releases (yq, gron, xsv, pup)
 ARG GRON_VERSION=0.7.1
@@ -75,10 +71,10 @@ RUN ARCH=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64") \
 # Switch back to non-root user
 USER node
 
-# Symlink gogcli config so gog CLI finds creds at its expected ~/.config/gogcli path
-# Actual creds live in ~/.openclaw/.config/gogcli (mounted as volume)
+# Symlink gws config so gws CLI finds creds at its expected ~/.config/gws path
+# Actual creds live in ~/.openclaw/.config/gws (mounted as volume)
 RUN mkdir -p ~/.config && \
-    ln -sf /home/node/.openclaw/.config/gogcli /home/node/.config/gogcli
+    ln -sf /home/node/.openclaw/.config/gws /home/node/.config/gws
 
 # Copy bash configuration
 COPY .bashrc /home/node/.bashrc

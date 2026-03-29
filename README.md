@@ -21,9 +21,9 @@ openclaw-gcloud/
 │   ├── openclaw-wrapper.sh     # OpenClaw CLI wrapper for container
 │   └── .bashrc                 # Container bash configuration
 ├── .openclaw/                  # Separate git repo (synced to VM, gitignored by parent)
-│   ├── .env                    # OpenClaw secrets (gateway token, API keys, gogcli)
+│   ├── .env                    # OpenClaw secrets (gateway token, API keys)
 │   ├── .env.example            # Secrets template
-│   ├── .config/gogcli/         # OAuth tokens (moved from .config/gogcli/)
+│   ├── .config/gws/            # OAuth tokens for Google Workspace CLI
 │   ├── openclaw.json           # OpenClaw config
 │   ├── credentials/            # Model credentials
 │   ├── sessions/               # Ephemeral (gitignored)
@@ -39,7 +39,6 @@ openclaw-gcloud/
     ├── local.sh                # Local Docker execution (start, stop, logs, build)
     ├── backup.sh               # VM disk snapshot management
     ├── teardown.sh             # Remove all GCP infrastructure
-    ├── gog-auth-local.sh       # Local gogcli OAuth authentication
     └── lib/
         ├── env.sh              # Environment loading (sources both .env files)
         ├── path.sh             # Path resolution utilities
@@ -61,7 +60,7 @@ Both modes use identical Docker images and mount `.openclaw/` the same way.
 | File | Contains | Tracked by |
 | --- | --- | --- |
 | `.env` | GCP infrastructure vars (project, region, VM, registry) | `.gitignore` (not in git) |
-| `.openclaw/.env` | OpenClaw secrets (token, API keys, gogcli password) | `.openclaw` git repo |
+| `.openclaw/.env` | OpenClaw secrets (token, API keys) | `.openclaw` git repo |
 
 ### Sync Architecture
 
@@ -92,7 +91,7 @@ Both modes use identical Docker images and mount `.openclaw/` the same way.
 **Base + Cloud Extension**:
 
 1. **ghcr.io/openclaw/openclaw** (Base Image) - Pre-built official image pulled from GitHub Container Registry. Version controlled via `OPENCLAW_VERSION` in `scripts/build.sh`.
-2. **openclaw-cloud:latest** (Cloud-Extended Image) - Extends base with gog CLI, gh CLI, uv, ffmpeg, vim, Gemini CLI
+2. **openclaw-cloud:latest** (Cloud-Extended Image) - Extends base with gws CLI, gh CLI, uv, ffmpeg, vim, Gemini CLI
 
 **Single-arch (amd64)**:
 - `./scripts/build.sh` - Builds cloud image for linux/amd64 (runs via Rosetta on Mac)
@@ -161,19 +160,22 @@ cp .openclaw/.env.example .openclaw/.env
 ./scripts/openclaw.sh pull
 ```
 
-### gogcli Authentication
+### Google Workspace CLI (gws) Authentication
 
 ```bash
-# 1. Set keyring password in .openclaw/.env
-echo "export GOG_KEYRING_PASSWORD=$(openssl rand -hex 32)" >> .openclaw/.env
+# 1. Install gws locally
+brew install googleworkspace-cli
+# or: npm install -g @googleworkspace/cli
 
-# 2. Authenticate locally (opens browser)
-./scripts/gog-auth-local.sh ~/Downloads/client_secret.json default you@gmail.com
+# 2. Authenticate (opens browser)
+gws auth login
 
-# 3. Push to VM
+# 3. Copy credentials to .openclaw config
+mkdir -p .openclaw/.config/gws
+cp ~/.config/gws/* .openclaw/.config/gws/
+
+# 4. Push to VM and restart
 ./scripts/openclaw.sh push
-
-# 4. Restart to pick up new credentials
 ./scripts/openclaw.sh restart
 ```
 
@@ -230,16 +232,13 @@ Runs on VM: installs Docker + git, creates directories, initializes .openclaw gi
 ./scripts/backup.sh delete    # Delete a snapshot
 ```
 
-### `./scripts/gog-auth-local.sh` - gogcli Authentication
-Runs OAuth flow locally, saves credentials to `.openclaw/.config/gogcli/`.
-
 ## Data Persistence
 
 | Data | Location | Sync Method |
 | --- | --- | --- |
 | OpenClaw config | `.openclaw/openclaw.json` | git (local <-> VM) |
 | Model credentials | `.openclaw/credentials/` | git (local <-> VM) |
-| gogcli OAuth tokens | `.openclaw/.config/gogcli/` | git (local <-> VM) |
+| gws OAuth tokens | `.openclaw/.config/gws/` | git (local <-> VM) |
 | Secrets (.env) | `.openclaw/.env` | git (local <-> VM) |
 | Agent workspaces | `workspaces/` | git via GitHub |
 | Channel sessions | `.openclaw/sessions/` | ephemeral (gitignored) |
@@ -252,7 +251,7 @@ Runs OAuth flow locally, saves credentials to `.openclaw/.config/gogcli/`.
 ├── .openclaw.git/              # Bare repo (receives pushes from local)
 ├── .openclaw/                  # Working copy (cloned from bare)
 │   ├── .env                    # OpenClaw secrets
-│   ├── .config/gogcli/         # OAuth tokens
+│   ├── .config/gws/            # OAuth tokens
 │   ├── openclaw.json           # Config
 │   ├── credentials/            # Model creds
 │   ├── sessions/               # Ephemeral (gitignored)

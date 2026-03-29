@@ -159,7 +159,7 @@ sudo -u "$GCP_VM_USER" bash -c "
         echo 'Creating working copy...'
         rm -rf \$WORK
         git clone \$BARE \$WORK
-        mkdir -p \$WORK/sessions \$WORK/.config/gogcli
+        mkdir -p \$WORK/sessions \$WORK/.config/gws
     fi
 "
 
