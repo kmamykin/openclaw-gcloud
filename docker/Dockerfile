@@ -42,9 +42,8 @@ RUN npx playwright install --with-deps chromium
 # Install Playwright CLI skills (for Claude Code skill discovery)
 RUN playwright-cli install --skills
 
-# Install Google Workspace CLI agent skills
-RUN mkdir -p /opt/skills/gws-skills && \
-    npx skills add https://github.com/googleworkspace/cli --dir /opt/skills/gws-skills -y
+# Install Google Workspace CLI agent skills (to /app/.claude/skills/)
+RUN HOME=/app npx skills add https://github.com/googleworkspace/cli -g -a claude-code -y
 
 # Install CLI tools from GitHub releases (yq, gron, xsv, pup)
 ARG GRON_VERSION=0.7.1
@@ -71,10 +70,6 @@ RUN ARCH=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64") \
 # Switch back to non-root user
 USER node
 
-# Symlink gws config so gws CLI finds creds at its expected ~/.config/gws path
-# Actual creds live in ~/.openclaw/.config/gws (mounted as volume)
-RUN mkdir -p ~/.config && \
-    ln -sf /home/node/.openclaw/.config/gws /home/node/.config/gws
 
 # Copy bash configuration
 COPY .bashrc /home/node/.bashrc
